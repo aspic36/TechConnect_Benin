@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Mission : {{ mission.demande.titre }}{% endblock %}
+{% block content %}
+<div class="card">
+    <span class="badge {{ mission.statut }}">{{ mission.get_statut_display }}</span>
+    <h2 class="card-title">{{ mission.demande.titre }}</h2>
+    <p class="card-meta">
+        Client : {{ mission.client.username }} ·
+        Prestataire : {{ mission.prestataire.username }}
+        {% if mission.client == user %} · {{ mission.prestataire.phone|default:'' }}{% endif %}
+    </p>
+    <p class="card-text"><strong>Prix convenu :</strong> {{ mission.proposition.prix }} FCFA · <strong>Délais :</strong> {{ mission.proposition.delais_jours }} jours</p>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Évaluations</h3>
+    {% for eval in mission.evaluations.all %}
+        <p class="card-meta">{{ eval.auteur.username }} → {{ eval.cible.username }} :
+            <strong>{{ eval.note }}/5</strong> {% if eval.commentaire %}— {{ eval.commentaire }}{% endif %}
+        </p>
+    {% empty %}
+        <p class="card-meta">Aucune évaluation pour l'instant.</p>
+    {% endfor %}
+</div>
+
+<p style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <a class="btn" href="{% url 'messagerie:fil' mission.pk %}">💬 Ouvrir la messagerie</a>
+    {% if mission.statut == 'en_cours' %}
+        <a class="btn btn-success" href="{% url 'propositions:clore' mission.pk %}">Clôturer la mission</a>
+    {% endif %}
+    {% if mission.statut == 'terminee' %}
+        <a class="btn btn-accent" href="{% url 'propositions:evaluer' mission.pk %}">Évaluer la mission</a>
+    {% endif %}
+</p>
+{% endblock %}

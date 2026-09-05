@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Prestataires — Back-office{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h2>Prestataires à vérifier</h2>
+    <p class="card-meta"><a href="{% url 'admin_panel:dashboard' %}">← Retour au tableau de bord</a></p>
+</div>
+{% if prestataires %}
+    <div class="grid">
+        {% for p in prestataires %}
+            <div class="card">
+                <h3 class="card-title">{{ p.username }}</h3>
+                <p class="card-meta">{{ p.company_name|default:'—' }} · {{ p.ville|default:'—' }} · {{ p.email|default:'—' }}</p>
+                <p class="card-meta">
+                    Statut :
+                    {% if p.is_verified %}
+                        <span class="badge acceptee">Vérifié</span>
+                    {% else %}
+                        <span class="badge refusee">Non vérifié</span>
+                    {% endif %}
+                </p>
+                {% if not p.is_verified %}
+                    <p style="margin-top: 0.75rem;">
+                        <a class="btn btn-success btn-sm" href="{% url 'admin_panel:verifier' p.pk %}">Vérifier</a>
+                    </p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty"><p>Aucun prestataire enregistré.</p></div>
+{% endif %}
+{% endblock %}

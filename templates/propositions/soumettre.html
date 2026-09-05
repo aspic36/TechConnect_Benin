@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Soumettre une proposition — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 620px;">
+    <h2>Proposition pour : {{ demande.titre }}</h2>
+    <p class="card-meta">{{ demande.description|truncatewords:30 }}</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="btn btn-accent" type="submit">Envoyer ma proposition</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

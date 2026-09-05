@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TechConnect Bénin{% endblock %}</title>
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <a class="navbar-brand" href="{% url 'demandes:mes_demandes' %}">
+            <span class="brand-dot">⚡</span> TechConnect <span class="brand-sub">Bénin</span>
+        </a>
+        <nav class="navbar-links">
+            {% if user.is_authenticated %}
+                <span class="nav-role">{{ user.get_role_display }}</span>
+                <a href="{% url 'demandes:mes_demandes' %}">Mes demandes</a>
+                <a href="{% url 'demandes:catalogue' %}">Catalogue</a>
+                <a href="{% url 'propositions:liste_missions' %}">Missions</a>
+                {% if user.is_staff %}
+                    <a href="{% url 'admin_panel:dashboard' %}">Back-office</a>
+                {% endif %}
+                <a href="{% url 'accounts:profil' %}">Profil</a>
+                <a class="btn btn-outline" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
+            {% else %}
+                <a href="{% url 'accounts:connexion' %}">Connexion</a>
+                <a class="btn btn-primary" href="{% url 'accounts:inscription' %}">S'inscrire</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 TechConnect Bénin — Mise en relation informatique au Bénin</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Mon profil — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 560px;">
+    <h2>{{ user.get_role_display }} — {{ user.username }}</h2>
+    <p class="card-meta">Email : {{ user.email|default:'—' }} | Téléphone : {{ user.phone|default:'—' }} | Ville : {{ user.ville|default:'—' }}</p>
+    {% if user.company_name %}<p class="card-meta">Société : {{ user.company_name }}</p>{% endif %}
+    {% if user.bio %}<p class="card-text">{{ user.bio }}</p>{% endif %}
+    <p class="card-meta">
+        Statut :
+        {% if user.is_verified %}
+            <span class="badge acceptee">Vérifié</span>
+        {% else %}
+            <span class="badge refusee">En attente de vérification</span>
+        {% endif %}
+    </p>
+</div>
+{% endblock %}

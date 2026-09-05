@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ demande.titre }} — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="card">
+    <span class="badge {{ demande.statut }}">{{ demande.get_statut_display }}</span>
+    <h1 class="card-title" style="font-size: 1.4rem;">{{ demande.titre }}</h1>
+    <p class="card-meta">{{ demande.categorie|default:'—' }} · {{ demande.lieu|default:'À distance' }} · Publiée le {{ demande.date_creation|date:'d/m/Y' }} · Urgence : {{ demande.urgence|yesno:'Oui,Non' }}</p>
+    <p class="card-text">{{ demande.description }}</p>
+    {% if demande.budget_min or demande.budget_max %}
+        <p><strong>Budget :</strong> {{ demande.budget_min|default:'—' }} – {{ demande.budget_max|default:'—' }} FCFA</p>
+    {% endif %}
+    {% if user.role == 'prestataire' %}
+        <p style="margin-top: 1rem;">
+            <a class="btn btn-accent" href="{% url 'propositions:soumettre' demande.pk %}">Soumettre une proposition</a>
+        </p>
+    {% elif demande.client == user %}
+        <p style="margin-top: 1rem;">
+            <a class="btn" href="{% url 'propositions:propositions_demande' demande.pk %}">Voir les {{ demande.propositions.count }} proposition(s)</a>
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

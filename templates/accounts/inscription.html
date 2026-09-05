@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Inscription — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 520px; margin: 0 auto;">
+    <h2>Créer un compte</h2>
+    <p class="card-meta">Rejoins la plateforme béninoise des services informatiques.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="btn" type="submit">S'inscrire</button>
+        </div>
+    </form>
+    <p class="card-meta" style="margin-top: 1rem;">Déjà inscrit ?
+        <a href="{% url 'accounts:connexion' %}">Se connecter</a>
+    </p>
+</div>
+{% endblock %}

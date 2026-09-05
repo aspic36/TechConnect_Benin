@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Catalogue des missions — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h2>Catalogue des missions</h2>
+</div>
+<form method="get" style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
+    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Rechercher…" style="max-width: 260px;">
+    <select name="categorie" style="max-width: 220px;">
+        <option value="">Toutes les catégories</option>
+        {% for cat in categories %}
+            <option value="{{ cat.slug }}" {% if categorie_active == cat.slug %}selected{% endif %}>{{ cat.nom }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-outline" type="submit">Filtrer</button>
+</form>
+{% if demandes %}
+    <div class="grid">
+        {% for demande in demandes %}
+            <div class="card">
+                <span class="badge {{ demande.statut }}">{{ demande.get_statut_display }}</span>
+                <h3 class="card-title">{{ demande.titre }}</h3>
+                <p class="card-meta">{{ demande.categorie|default:'—' }} · {{ demande.lieu|default:'À distance' }}</p>
+                {% if demande.budget_min or demande.budget_max %}
+                    <p class="card-meta">Budget : {{ demande.budget_min|default:'—' }} – {{ demande.budget_max|default:'—' }} FCFA</p>
+                {% endif %}
+                <p class="card-text">{{ demande.description|truncatewords:25 }}</p>
+                <p>
+                    <a class="btn btn-sm" href="{% url 'demandes:detail_demande' demande.pk %}">Voir la mission</a>
+                    {% if user.role == 'prestataire' %}
+                        <a class="btn btn-accent btn-sm" href="{% url 'propositions:soumettre' demande.pk %}">Soumettre une proposition</a>
+                    {% endif %}
+                </p>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty"><p>Aucune mission ouverte pour le moment.</p></div>
+{% endif %}
+{% endblock %}

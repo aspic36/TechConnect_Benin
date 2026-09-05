@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Mes missions — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="page-title"><h2>Mes missions</h2></div>
+{% if missions %}
+    <div class="grid">
+        {% for mission in missions %}
+            <div class="card">
+                <span class="badge {{ mission.statut }}">{{ mission.get_statut_display }}</span>
+                <h3 class="card-title">
+                    <a href="{% url 'propositions:detail_mission' mission.pk %}">{{ mission.demande.titre }}</a>
+                </h3>
+                <p class="card-meta">
+                    {% if mission.client == user %}Client → {% endif %}
+                    Partenaire : {{ mission.prestataire.username }}
+                    {% if mission.client != user %} · Client : {{ mission.client.username }}{% endif %}
+                </p>
+                <p style="margin-top: 0.75rem;">
+                    <a class="btn btn-outline btn-sm" href="{% url 'messagerie:fil' mission.pk %}">Message</a>
+                </p>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty"><p>Aucune mission pour le moment.</p></div>
+{% endif %}
+{% endblock %}

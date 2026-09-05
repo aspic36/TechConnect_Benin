@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Propositions — {{ demande.titre }}{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h2>Propositions pour : {{ demande.titre }}</h2>
+</div>
+{% if propositions %}
+    <div class="grid">
+        {% for prop in propositions %}
+            <div class="card">
+                <span class="badge {{ prop.statut }}">{{ prop.get_statut_display }}</span>
+                <h3 class="card-title">{{ prop.prestataire.username }}</h3>
+                <p class="card-meta">{{ prop.prestataire.company_name|default:'' }} · {{ prop.prestataire.ville|default:'' }}</p>
+                <p class="card-text"><strong>Prix :</strong> {{ prop.prix }} FCFA · <strong>Délais :</strong> {{ prop.delais_jours }} jours</p>
+                {% if prop.message %}<p class="card-text">{{ prop.message }}</p>{% endif %}
+                {% if demande.statut == 'en_cours' and prop.statut == 'envoyee' %}
+                    <p style="margin-top: 0.75rem;">
+                        <a class="btn btn-success btn-sm" href="{% url 'propositions:accepter' prop.pk %}">Accepter (crée la mission)</a>
+                        <a class="btn btn-danger btn-sm" href="{% url 'propositions:refuser' prop.pk %}">Refuser</a>
+                    </p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty"><p>Aucune proposition reçue pour l'instant.</p></div>
+{% endif %}
+{% endblock %}

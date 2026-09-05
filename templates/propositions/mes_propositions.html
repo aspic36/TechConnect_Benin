@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Mes propositions — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="page-title"><h2>Mes propositions</h2></div>
+{% if propositions %}
+    <div class="grid">
+        {% for prop in propositions %}
+            <div class="card">
+                <span class="badge {{ prop.statut }}">{{ prop.get_statut_display }}</span>
+                <h3 class="card-title"><a href="{% url 'demandes:detail_demande' prop.demande.pk %}">{{ prop.demande.titre }}</a></h3>
+                <p class="card-meta">Prix : {{ prop.prix }} FCFA · Délais : {{ prop.delais_jours }} j</p>
+                {% if prop.message %}<p class="card-text">{{ prop.message|truncatewords:20 }}</p>{% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty">
+        <p>Aucune proposition envoyée.</p>
+        <p><a class="btn" href="{% url 'demandes:catalogue' %}">Parcourir le catalogue</a></p>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Messagerie — {{ mission.demande.titre }}{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h2>Messagerie — {{ mission.demande.titre }}</h2>
+    <p class="card-meta">
+        <a href="{% url 'propositions:detail_mission' mission.pk %}">← Retour à la mission</a>
+    </p>
+</div>
+<div class="chat-box">
+    {% for msg in fil %}
+        <div class="chat-msg {% if msg.expediteur == user %}me{% endif %}">
+            <span class="chat-author">{{ msg.expediteur.username }}</span>
+            <div class="bubble">{{ msg.contenu|linebreaks }}</div>
+        </div>
+    {% empty %}
+        <p class="card-meta">Aucun message. Lance la discussion !</p>
+    {% endfor %}
+</div>
+<form method="post" style="display: flex; gap: 0.5rem;">
+    {% csrf_token %}
+    <input type="text" name="contenu" placeholder="Écrire un message…" required>
+    <button class="btn" type="submit">Envoyer</button>
+</form>
+{% endblock %}

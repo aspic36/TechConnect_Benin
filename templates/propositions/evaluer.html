@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Évaluer la mission — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 560px;">
+    <h2>Évaluer : {{ cible.username }}</h2>
+    <p class="card-meta">Mission : {{ mission.demande.titre }}</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="btn btn-accent" type="submit">Envoyer l'évaluation</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
