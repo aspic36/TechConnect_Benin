@@ -1,35 +1,57 @@
 {% extends 'base.html' %}
 {% block title %}Mission : {{ mission.demande.titre }}{% endblock %}
 {% block content %}
-<div class="card">
-    <span class="badge {{ mission.statut }}">{{ mission.get_statut_display }}</span>
-    <h2 class="card-title">{{ mission.demande.titre }}</h2>
-    <p class="card-meta">
-        Client : {{ mission.client.username }} ·
-        Prestataire : {{ mission.prestataire.username }}
-        {% if mission.client == user %} · {{ mission.prestataire.phone|default:'' }}{% endif %}
-    </p>
-    <p class="card-text"><strong>Prix convenu :</strong> {{ mission.proposition.prix }} FCFA · <strong>Délais :</strong> {{ mission.proposition.delais_jours }} jours</p>
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">{{ mission.demande.titre }}</h2>
+        <span class="badge {{ mission.statut }}">{{ mission.get_statut_display }}</span>
+    </div>
+    <p>Mission créée le {{ mission.date_creation|date:'d/m/Y' }}</p>
+</div>
+
+<div class="grid" style="margin-bottom: 1.2rem;">
+    <div class="card">
+        <h3 class="card-title">Parties prenantes</h3>
+        <p class="card-text">👤 Client : <strong>{{ mission.client.username }}</strong></p>
+        <p class="card-text">💻 Prestataire : <strong>{{ mission.prestataire.username }}</strong>
+            {% if mission.prestataire.is_verified %}<span class="tag emerald">✓ Vérifié</span>{% endif %}
+        </p>
+        {% if mission.client == user and mission.prestataire.phone %}
+            <p class="card-meta">📞 Téléphone prestataire : {{ mission.prestataire.phone }}</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h3 class="card-title">Conditions</h3>
+        <p class="card-text"><span class="tag emerald">💰 {{ mission.proposition.prix|default:'—' }} FCFA</span></p>
+        <p class="card-text"><span class="tag sky">⏱ Délais : {{ mission.proposition.delais_jours|default:'—' }} jours</span></p>
+        {% if mission.proposition.message %}
+            <p class="card-meta" style="margin-top: 0.6rem;">« {{ mission.proposition.message }} »</p>
+        {% endif %}
+    </div>
 </div>
 
 <div class="card">
-    <h3 class="card-title">Évaluations</h3>
+    <h3 class="card-title">⭐ Évaluations</h3>
     {% for eval in mission.evaluations.all %}
-        <p class="card-meta">{{ eval.auteur.username }} → {{ eval.cible.username }} :
-            <strong>{{ eval.note }}/5</strong> {% if eval.commentaire %}— {{ eval.commentaire }}{% endif %}
-        </p>
+        <div style="display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border);">
+            <span style="font-size: 1.2rem;">{{ eval.note }}<small>/5</small></span>
+            <div>
+                <p style="font-weight: 600; font-size: 0.9rem;">{{ eval.auteur.username }} → {{ eval.cible.username }}</p>
+                {% if eval.commentaire %}<p class="card-meta">{{ eval.commentaire }}</p>{% endif %}
+            </div>
+        </div>
     {% empty %}
         <p class="card-meta">Aucune évaluation pour l'instant.</p>
     {% endfor %}
 </div>
 
-<p style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-    <a class="btn" href="{% url 'messagerie:fil' mission.pk %}">💬 Ouvrir la messagerie</a>
+<div class="actions" style="margin-top: 1.2rem;">
+    <a class="btn btn-lg" href="{% url 'messagerie:fil' mission.pk %}">💬 Ouvrir la messagerie</a>
     {% if mission.statut == 'en_cours' %}
-        <a class="btn btn-success" href="{% url 'propositions:clore' mission.pk %}">Clôturer la mission</a>
+        <a class="btn btn-success" href="{% url 'propositions:clore' mission.pk %}">✓ Clôturer la mission</a>
     {% endif %}
     {% if mission.statut == 'terminee' %}
-        <a class="btn btn-accent" href="{% url 'propositions:evaluer' mission.pk %}">Évaluer la mission</a>
+        <a class="btn btn-accent" href="{% url 'propositions:evaluer' mission.pk %}">★ Évaluer la mission</a>
     {% endif %}
-</p>
+</div>
 {% endblock %}

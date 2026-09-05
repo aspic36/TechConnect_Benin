@@ -1,22 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}Mes propositions — TechConnect Bénin{% endblock %}
 {% block content %}
-<div class="page-title"><h2>Mes propositions</h2></div>
+<div class="hero-mini">
+    <h2>Mes propositions</h2>
+    <p>Suis le statut de tes offres envoyées aux clients.</p>
+</div>
 {% if propositions %}
     <div class="grid">
         {% for prop in propositions %}
-            <div class="card">
-                <span class="badge {{ prop.statut }}">{{ prop.get_statut_display }}</span>
-                <h3 class="card-title"><a href="{% url 'demandes:detail_demande' prop.demande.pk %}">{{ prop.demande.titre }}</a></h3>
-                <p class="card-meta">Prix : {{ prop.prix }} FCFA · Délais : {{ prop.delais_jours }} j</p>
+            <div class="card card-hover">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span class="badge {{ prop.statut }}">{{ prop.get_statut_display }}</span>
+                    <span class="card-meta">{{ prop.date_creation|date:'d/m/Y' }}</span>
+                </div>
+                <h3 class="card-title">
+                    <a href="{% url 'demandes:detail_demande' prop.demande.pk %}">{{ prop.demande.titre }}</a>
+                </h3>
+                <p class="card-text">
+                    <span class="tag emerald">💰 {{ prop.prix }} FCFA</span>
+                    <span class="tag sky">⏱ {{ prop.delais_jours }} jours</span>
+                </p>
                 {% if prop.message %}<p class="card-text">{{ prop.message|truncatewords:20 }}</p>{% endif %}
+                {% if prop.statut == 'acceptee' and prop.demande.mission %}
+                    <div class="actions">
+                        <a class="btn btn-sm" href="{% url 'propositions:detail_mission' prop.mission.pk %}">
+                            Voir la mission
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         {% endfor %}
     </div>
 {% else %}
     <div class="empty">
-        <p>Aucune proposition envoyée.</p>
-        <p><a class="btn" href="{% url 'demandes:catalogue' %}">Parcourir le catalogue</a></p>
+        <div class="big">📭</div>
+        <p>Aucune proposition envoyée pour le moment.</p>
+        <p style="margin-top: 0.8rem;"><a class="btn" href="{% url 'demandes:catalogue' %}">Explorer le catalogue</a></p>
     </div>
 {% endif %}
 {% endblock %}

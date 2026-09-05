@@ -1,25 +1,35 @@
 {% extends 'base.html' %}
 {% block title %}Messagerie — {{ mission.demande.titre }}{% endblock %}
 {% block content %}
-<div class="page-title">
-    <h2>Messagerie — {{ mission.demande.titre }}</h2>
-    <p class="card-meta">
-        <a href="{% url 'propositions:detail_mission' mission.pk %}">← Retour à la mission</a>
-    </p>
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">💬 {{ mission.demande.titre }}</h2>
+            <p>Discussion sécurisée avec :
+                {% if mission.client == user %} {{ mission.prestataire.username }}{% else %} {{ mission.client.username }}{% endif %}
+            </p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'propositions:detail_mission' mission.pk %}">← Mission</a>
+    </div>
 </div>
 <div class="chat-box">
     {% for msg in fil %}
         <div class="chat-msg {% if msg.expediteur == user %}me{% endif %}">
-            <span class="chat-author">{{ msg.expediteur.username }}</span>
-            <div class="bubble">{{ msg.contenu|linebreaks }}</div>
+            <span class="author">{{ msg.expediteur.username }} ·
+                {{ msg.date_creation|date:'d/m H:i' }}
+            </span>
+            <div class="bubble">{{ msg.contenu|linebreaksbr }}</div>
         </div>
     {% empty %}
-        <p class="card-meta">Aucun message. Lance la discussion !</p>
+        <div class="empty" style="padding: 1.5rem;">
+            <div class="big">💬</div>
+            <p>Aucun message. Lance la discussion !</p>
+        </div>
     {% endfor %}
 </div>
-<form method="post" style="display: flex; gap: 0.5rem;">
+<form method="post" style="display: flex; gap: 0.6rem; align-items: stretch;">
     {% csrf_token %}
-    <input type="text" name="contenu" placeholder="Écrire un message…" required>
-    <button class="btn" type="submit">Envoyer</button>
+    <input class="input-inline" type="text" name="contenu" placeholder="Écrire un message…" required style="flex: 1;">
+    <button class="btn" type="submit">Envoyer ↗</button>
 </form>
 {% endblock %}

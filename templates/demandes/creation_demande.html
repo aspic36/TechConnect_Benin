@@ -1,13 +1,16 @@
 {% extends 'base.html' %}
 {% block title %}Publier un besoin — TechConnect Bénin{% endblock %}
 {% block content %}
-<div class="card" style="max-width: 620px;">
-    <h2>Publier un nouveau besoin informatique</h2>
+<div class="hero-mini">
+    <h2>📝 Publier un besoin</h2>
+    <p>Décris ton projet : les prestataires vérifiés te feront des propositions.</p>
+</div>
+<div class="card form-card" style="max-width: 640px;">
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
         <div class="form-actions">
-            <button class="btn" type="submit">Publier ma demande</button>
+            <button class="btn btn-lg" type="submit" style="width: 100%;">Publier ma demande</button>
         </div>
     </form>
 </div>

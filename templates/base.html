@@ -5,27 +5,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}TechConnect Bénin{% endblock %}</title>
-    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
     <header class="navbar">
-        <a class="navbar-brand" href="{% url 'demandes:mes_demandes' %}">
-            <span class="brand-dot">⚡</span> TechConnect <span class="brand-sub">Bénin</span>
+        <a class="navbar-brand" href="{% url 'accounts:accueil' %}">
+            <span class="brand-dot">⚡</span>
+            TechConnect
+            {% if not user.is_authenticated %}<span class="brand-sub">Bénin</span>{% endif %}
         </a>
         <nav class="navbar-links">
             {% if user.is_authenticated %}
                 <span class="nav-role">{{ user.get_role_display }}</span>
-                <a href="{% url 'demandes:mes_demandes' %}">Mes demandes</a>
-                <a href="{% url 'demandes:catalogue' %}">Catalogue</a>
-                <a href="{% url 'propositions:liste_missions' %}">Missions</a>
-                {% if user.is_staff %}
-                    <a href="{% url 'admin_panel:dashboard' %}">Back-office</a>
+                {% if user.role == 'client' %}
+                    <a class="nav-link" href="{% url 'demandes:mes_demandes' %}">Mes demandes</a>
+                    <a class="nav-link" href="{% url 'demandes:creation_demande' %}">Publier un besoin</a>
+                {% else %}
+                    <a class="nav-link" href="{% url 'demandes:catalogue' %}">Catalogue</a>
+                    <a class="nav-link" href="{% url 'propositions:mes_propositions' %}">Mes propositions</a>
                 {% endif %}
-                <a href="{% url 'accounts:profil' %}">Profil</a>
-                <a class="btn btn-outline" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
+                <a class="nav-link" href="{% url 'propositions:liste_missions' %}">Missions</a>
+                {% if user.is_staff %}
+                    <a class="nav-link" href="{% url 'admin_panel:dashboard' %}">Back-office</a>
+                {% endif %}
+                <a class="nav-link" href="{% url 'accounts:profil' %}">Profil</a>
+                <a class="btn btn-outline btn-sm" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
             {% else %}
-                <a href="{% url 'accounts:connexion' %}">Connexion</a>
-                <a class="btn btn-primary" href="{% url 'accounts:inscription' %}">S'inscrire</a>
+                <a class="nav-link" href="{% url 'accounts:accueil' %}">Accueil</a>
+                <a class="nav-link" href="{% url 'accounts:connexion' %}">Connexion</a>
+                <a class="btn btn-sm" href="{% url 'accounts:inscription' %}">S'inscrire</a>
             {% endif %}
         </nav>
     </header>
@@ -43,7 +52,7 @@
     </main>
 
     <footer class="footer">
-        <p>© 2026 TechConnect Bénin — Mise en relation informatique au Bénin</p>
+        <p>© 2026 TechConnect Bénin — La mise en relation des services informatiques au Bénin</p>
     </footer>
 </body>
 </html>

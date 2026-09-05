@@ -6,6 +6,12 @@ from django.shortcuts import redirect, render
 from .forms import ConnexionForm, InscriptionForm
 
 
+def accueil(request):
+    if request.user.is_authenticated:
+        return redirect(accueil_selon_role(request.user))
+    return render(request, 'accounts/accueil.html')
+
+
 def accueil_selon_role(user):
     if user is None:
         return 'accounts:connexion'

@@ -1,22 +1,45 @@
 {% extends 'base.html' %}
 {% block title %}{{ demande.titre }} — TechConnect Bénin{% endblock %}
 {% block content %}
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">{{ demande.titre }}</h2>
+        <span class="badge {{ demande.statut }}">{{ demande.get_statut_display }}</span>
+    </div>
+    <p>
+        <span class="tag emerald">{{ demande.categorie|default:'Général' }}</span>
+        {% if demande.a_distance %}
+            <span class="tag sky">🌍 À distance</span>
+        {% else %}
+            <span class="tag">{{ demande.lieu|default:'Non précisé' }}</span>
+        {% endif %}
+        <span style="opacity: 0.85;">· Publiée le {{ demande.date_creation|date:'d/m/Y' }}</span>
+    </p>
+</div>
 <div class="card">
-    <span class="badge {{ demande.statut }}">{{ demande.get_statut_display }}</span>
-    <h1 class="card-title" style="font-size: 1.4rem;">{{ demande.titre }}</h1>
-    <p class="card-meta">{{ demande.categorie|default:'—' }} · {{ demande.lieu|default:'À distance' }} · Publiée le {{ demande.date_creation|date:'d/m/Y' }} · Urgence : {{ demande.urgence|yesno:'Oui,Non' }}</p>
+    <h3 class="card-title">Description</h3>
     <p class="card-text">{{ demande.description }}</p>
     {% if demande.budget_min or demande.budget_max %}
-        <p><strong>Budget :</strong> {{ demande.budget_min|default:'—' }} – {{ demande.budget_max|default:'—' }} FCFA</p>
+        <div class="card" style="background: var(--emerald-50); border-color: #a7f3d0; display: inline-block; margin: 0;">
+            💡 Budget indicatif : <strong style="color: var(--success-dark); font-size: 1.1rem;">
+                {{ demande.budget_min|default:'—' }} – {{ demande.budget_max|default:'—' }} FCFA
+            </strong>
+        </div>
+    {% endif %}
+    {% if demande.urgence %}
+        <p style="margin-top: 1rem;"><span class="badge litige">⚡ Urgent</span></p>
     {% endif %}
     {% if user.role == 'prestataire' %}
-        <p style="margin-top: 1rem;">
-            <a class="btn btn-accent" href="{% url 'propositions:soumettre' demande.pk %}">Soumettre une proposition</a>
-        </p>
+        <div class="actions" style="margin-top: 1.4rem;">
+            <a class="btn btn-lg" href="{% url 'propositions:soumettre' demande.pk %}">Soumettre une proposition</a>
+        </div>
     {% elif demande.client == user %}
-        <p style="margin-top: 1rem;">
-            <a class="btn" href="{% url 'propositions:propositions_demande' demande.pk %}">Voir les {{ demande.propositions.count }} proposition(s)</a>
-        </p>
+        <div class="actions" style="margin-top: 1.4rem;">
+            <a class="btn btn-lg" href="{% url 'propositions:propositions_demande' demande.pk %}">
+                Voir les {{ demande.propositions.count }} proposition(s)
+            </a>
+        </div>
     {% endif %}
 </div>
+<p class="card-meta"><a href="{% url 'demandes:catalogue' %}">← Retour au catalogue</a></p>
 {% endblock %}

@@ -1,18 +1,44 @@
 {% extends 'base.html' %}
 {% block title %}Mon profil — TechConnect Bénin{% endblock %}
 {% block content %}
-<div class="card" style="max-width: 560px;">
-    <h2>{{ user.get_role_display }} — {{ user.username }}</h2>
-    <p class="card-meta">Email : {{ user.email|default:'—' }} | Téléphone : {{ user.phone|default:'—' }} | Ville : {{ user.ville|default:'—' }}</p>
-    {% if user.company_name %}<p class="card-meta">Société : {{ user.company_name }}</p>{% endif %}
-    {% if user.bio %}<p class="card-text">{{ user.bio }}</p>{% endif %}
-    <p class="card-meta">
-        Statut :
-        {% if user.is_verified %}
-            <span class="badge acceptee">Vérifié</span>
-        {% else %}
-            <span class="badge refusee">En attente de vérification</span>
-        {% endif %}
-    </p>
+<div class="hero-mini">
+    <h2>Mon profil</h2>
+    <p>{{ user.get_role_display }} — {{ user.username }}</p>
+</div>
+<div class="card" style="max-width: 620px;">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800;">
+            {{ user.username|first|upper }}
+        </div>
+        <div>
+            <h3 class="card-title" style="margin: 0;">{{ user.username }}</h3>
+            <p class="card-meta">
+                {% if user.is_verified %}
+                    <span class="badge acceptee">✓ Vérifié</span>
+                {% else %}
+                    <span class="badge en_attente">En attente de vérification</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="card" style="margin: 0;">
+            <p class="card-meta" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;">Email</p>
+            <p><strong>{{ user.email|default:'—' }}</strong></p>
+            <p class="card-meta" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.8rem;">Téléphone</p>
+            <p><strong>{{ user.phone|default:'—' }}</strong></p>
+        </div>
+        <div class="card" style="margin: 0;">
+            <p class="card-meta" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;">Ville</p>
+            <p><strong>{{ user.ville|default:'—' }}</strong></p>
+            {% if user.company_name %}
+                <p class="card-meta" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.8rem;">Société</p>
+                <p><strong>{{ user.company_name }}</strong></p>
+            {% endif %}
+        </div>
+    </div>
+    {% if user.bio %}
+        <p class="card-text" style="margin-top: 1rem;">{{ user.bio }}</p>
+    {% endif %}
 </div>
 {% endblock %}

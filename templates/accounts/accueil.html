@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}TechConnect Bénin — Services informatiques{% endblock %}
+{% block content %}
+<section class="hero">
+    <h1>Trouvez le bon expert informatique au Bénin</h1>
+    <p>
+        Besoin d'un site web, d'un réseau, d'une automatisation ?
+        Publiez votre besoin gratuitement et recevez des propositions de prestataires vérifiés.
+        Vous êtes prestataire ? Découvrez le catalogue des missions ouvertes.
+    </p>
+    <div class="btn-row">
+        <a class="btn btn-lg" href="{% url 'accounts:inscription' %}">Créer un compte gratuit</a>
+        <a class="btn btn-ghost btn-lg" href="{% url 'accounts:connexion' %}">Se connecter</a>
+    </div>
+    <div class="hero-stats">
+        <div class="hero-stat"><b>100%</b><span>gratuit pour les clients</span></div>
+        <div class="hero-stat"><b>5-10%</b><span>commission max sur missions</span></div>
+        <div class="hero-stat"><b>4,9</b><span>note moyenne (évaluations)</span></div>
+    </div>
+</section>
+
+<h2 class="page-title" style="font-size: 1.3rem;">Comment ça marche ?</h2>
+<div class="features-grid">
+    <div class="feature">
+        <div class="feature-icon" style="background: var(--indigo-50);">1️⃣</div>
+        <h3>Publiez votre besoin</h3>
+        <p>Décrivez votre projet : développement web, réseau, sécurité, automatisation…</p>
+    </div>
+    <div class="feature">
+        <div class="feature-icon" style="background: var(--amber-50);">2️⃣</div>
+        <h3>Recevez des propositions</h3>
+        <p>Des prestataires vérifiés vous proposent prix et délais. Comparez sans pression.</p>
+    </div>
+    <div class="feature">
+        <div class="feature-icon" style="background: var(--emerald-50);">3️⃣</div>
+        <h3>Démarrez la mission</h3>
+        <p>Acceptez l'offre qui vous convient, discutez dans la messagerie sécurisée et évaluez le travail.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem;">
+    <div class="card">
+        <h3 class="card-title">🧑‍💼 Pour les clients</h3>
+        <p class="card-text">Publiez vos besoins en moins de 2 minutes et laissez les prestataires venir à vous.</p>
+        <ul style="margin: 0.8rem 0 0 1.1rem; color: var(--text-muted); font-size: 0.92rem;">
+            <li>Publication gratuite</li>
+            <li>Confidentialité : vos demandes sont privées</li>
+            <li>Comparaison des offres en un clin d'œil</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3 class="card-title">🧑‍💻 Pour les prestataires</h3>
+        <p class="card-text">Accédez au catalogue global des missions et construisez votre réputation.</p>
+        <ul style="margin: 0.8rem 0 0 1.1rem; color: var(--text-muted); font-size: 0.92rem;">
+            <li>Catalogue filtrable par catégorie et lieu</li>
+            <li>Vérification par l'équipe TechConnect</li>
+            <li>Évaluations pour gagner la confiance</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.2rem; text-align: center; background: var(--gradient); color: #fff; border: none;">
+    <h3 style="font-size: 1.3rem; margin-bottom: 0.3rem;">Prêt à connecter vos compétences ?</h3>
+    <p style="opacity: 0.92; margin-bottom: 1rem;">Rejoignez TechConnect Bénin dès aujourd'hui.</p>
+    <a class="btn btn-lg" style="background: #fff; color: var(--primary); box-shadow: none;" href="{% url 'accounts:inscription' %}">S'inscrire maintenant</a>
+</div>
+{% endblock %}

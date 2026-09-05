@@ -1,20 +1,35 @@
 {% extends 'base.html' %}
 {% block title %}Back-office — TechConnect Bénin{% endblock %}
 {% block content %}
-<div class="page-title"><h2>Back-office — Tableau de bord</h2></div>
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">🛠 Back-office</h2>
+            <p>Vue d'ensemble de la plateforme.</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="/admin/">Administration Django</a>
+    </div>
+</div>
+
 <div class="stat-grid">
     <div class="stat"><div class="stat-value">{{ total_clients }}</div><div class="stat-label">Clients</div></div>
     <div class="stat"><div class="stat-value">{{ total_prestataires }}</div><div class="stat-label">Prestataires</div></div>
-    <div class="stat"><div class="stat-value">{{ prestataires_a_verifier }}</div><div class="stat-label">Prestataires à vérifier</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--accent);">{{ prestataires_a_verifier }}</div><div class="stat-label">À vérifier</div></div>
     <div class="stat"><div class="stat-value">{{ total_demandes }}</div><div class="stat-label">Demandes</div></div>
-    <div class="stat"><div class="stat-value">{{ demandes_en_attente }}</div><div class="stat-label">En attente</div></div>
-    <div class="stat"><div class="stat-value">{{ demandes_en_cours }}</div><div class="stat-label">En cours</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--accent);">{{ demandes_en_attente }}</div><div class="stat-label">En attente</div></div>
+    <div class="stat"><div class="stat-value">{{ demandes_en_cours }}</div><div class="stat-label">Demandes en cours</div></div>
     <div class="stat"><div class="stat-value">{{ missions_en_cours }}</div><div class="stat-label">Missions en cours</div></div>
-    <div class="stat"><div class="stat-value">{{ missions_terminees }}</div><div class="stat-label">Missions terminées</div></div>
-    <div class="stat"><div class="stat-value">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--success);">{{ missions_terminees }}</div><div class="stat-label">Missions terminées</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div>
 </div>
-<div class="card">
-    <a class="btn btn-outline" href="{% url 'admin_panel:prestataires' %}">Vérifier les prestataires</a>
-    <a class="btn btn-outline" href="/admin/">Administration Django</a>
+
+{% if prestataires_a_verifier %}
+<div class="card" style="border-color: #fde68a;">
+    <h3 class="card-title">⚠️ Action requise</h3>
+    <p class="card-text">{{ prestataires_a_verifier }} prestataire(s) attendent une vérification.</p>
+    <div class="actions">
+        <a class="btn btn-accent" href="{% url 'admin_panel:prestataires' %}">Vérifier les prestataires</a>
+    </div>
 </div>
+{% endif %}
 {% endblock %}

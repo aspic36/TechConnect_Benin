@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% block title %}Catalogue des missions — TechConnect Bénin{% endblock %}
 {% block content %}
-<div class="page-title">
-    <h2>Catalogue des missions</h2>
+<div class="hero-mini">
+    <h2>🔍 Catalogue des missions</h2>
+    <p>Toutes les demandes publiques ouvertes — filtre par catégorie ou recherche.</p>
 </div>
-<form method="get" style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
-    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Rechercher…" style="max-width: 260px;">
-    <select name="categorie" style="max-width: 220px;">
+<form method="get" class="filter-bar">
+    <input class="input-inline" type="text" name="q" value="{{ request.GET.q }}" placeholder="Rechercher un titre ou description…" style="flex: 1; min-width: 180px;">
+    <select class="input-inline" name="categorie">
         <option value="">Toutes les catégories</option>
         {% for cat in categories %}
             <option value="{{ cat.slug }}" {% if categorie_active == cat.slug %}selected{% endif %}>{{ cat.nom }}</option>
@@ -17,24 +18,41 @@
 {% if demandes %}
     <div class="grid">
         {% for demande in demandes %}
-            <div class="card">
-                <span class="badge {{ demande.statut }}">{{ demande.get_statut_display }}</span>
+            <div class="card card-hover">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; gap: 0.5rem; flex-wrap: wrap;">
+                    <span class="badge {{ demande.statut }}">{{ demande.get_statut_display }}</span>
+                    {% if demande.urgence %}<span class="tag amber">⚡ Urgent</span>{% endif %}
+                </div>
                 <h3 class="card-title">{{ demande.titre }}</h3>
-                <p class="card-meta">{{ demande.categorie|default:'—' }} · {{ demande.lieu|default:'À distance' }}</p>
-                {% if demande.budget_min or demande.budget_max %}
-                    <p class="card-meta">Budget : {{ demande.budget_min|default:'—' }} – {{ demande.budget_max|default:'—' }} FCFA</p>
-                {% endif %}
-                <p class="card-text">{{ demande.description|truncatewords:25 }}</p>
-                <p>
-                    <a class="btn btn-sm" href="{% url 'demandes:detail_demande' demande.pk %}">Voir la mission</a>
-                    {% if user.role == 'prestataire' %}
-                        <a class="btn btn-accent btn-sm" href="{% url 'propositions:soumettre' demande.pk %}">Soumettre une proposition</a>
+                <p class="card-meta">
+                    <span class="tag">{{ demande.categorie|default:'Général' }}</span>
+                    {% if demande.a_distance %}
+                        <span class="tag sky">🌍 À distance</span>
+                    {% else %}
+                        <span class="tag">{{ demande.lieu|default:'Non précisé' }}</span>
                     {% endif %}
                 </p>
+                {% if demande.budget_min or demande.budget_max %}
+                    <p class="card-text"><strong>💡 Budget :</strong>
+                        <span style="color: var(--success); font-weight: 700;">
+                            {{ demande.budget_min|default:'—' }} – {{ demande.budget_max|default:'—' }} FCFA
+                        </span>
+                    </p>
+                {% endif %}
+                <p class="card-text">{{ demande.description|truncatewords:24 }}</p>
+                <div class="actions">
+                    <a class="btn btn-outline btn-sm" href="{% url 'demandes:detail_demande' demande.pk %}">Voir la mission</a>
+                    {% if user.role == 'prestataire' %}
+                        <a class="btn btn-accent btn-sm" href="{% url 'propositions:soumettre' demande.pk %}">Faire une proposition</a>
+                    {% endif %}
+                </div>
             </div>
         {% endfor %}
     </div>
 {% else %}
-    <div class="empty"><p>Aucune mission ouverte pour le moment.</p></div>
+    <div class="empty">
+        <div class="big">🔎</div>
+        <p>Aucune mission ouverte ne correspond à ta recherche.</p>
+    </div>
 {% endif %}
 {% endblock %}

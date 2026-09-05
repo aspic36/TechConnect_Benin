@@ -1,28 +1,46 @@
 {% extends 'base.html' %}
 {% block title %}Propositions — {{ demande.titre }}{% endblock %}
 {% block content %}
-<div class="page-title">
-    <h2>Propositions pour : {{ demande.titre }}</h2>
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">Propositions reçues</h2>
+        <span class="badge {{ demande.statut }}">{{ demande.get_statut_display }}</span>
+    </div>
+    <p>Pour : <strong>{{ demande.titre }}</strong></p>
 </div>
 {% if propositions %}
     <div class="grid">
         {% for prop in propositions %}
-            <div class="card">
-                <span class="badge {{ prop.statut }}">{{ prop.get_statut_display }}</span>
-                <h3 class="card-title">{{ prop.prestataire.username }}</h3>
-                <p class="card-meta">{{ prop.prestataire.company_name|default:'' }} · {{ prop.prestataire.ville|default:'' }}</p>
-                <p class="card-text"><strong>Prix :</strong> {{ prop.prix }} FCFA · <strong>Délais :</strong> {{ prop.delais_jours }} jours</p>
+            <div class="card card-hover">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span class="badge {{ prop.statut }}">{{ prop.get_statut_display }}</span>
+                    {% if prop.statut == 'acceptee' %}<span class="tag emerald">✓ Retenue</span>{% endif %}
+                </div>
+                <h3 class="card-title">{{ prop.prestataire.username }}
+                    {% if prop.prestataire.is_verified %}<span class="tag emerald">✓ Vérifié</span>{% endif %}
+                </h3>
+                <p class="card-meta">
+                    {{ prop.prestataire.company_name|default:'' }} · {{ prop.prestataire.ville|default:'' }}
+                </p>
+                <p class="card-text">
+                    <span class="tag emerald">💰 {{ prop.prix }} FCFA</span>
+                    <span class="tag sky">⏱ {{ prop.delais_jours }} jours</span>
+                </p>
                 {% if prop.message %}<p class="card-text">{{ prop.message }}</p>{% endif %}
                 {% if demande.statut == 'en_cours' and prop.statut == 'envoyee' %}
-                    <p style="margin-top: 0.75rem;">
-                        <a class="btn btn-success btn-sm" href="{% url 'propositions:accepter' prop.pk %}">Accepter (crée la mission)</a>
+                    <div class="actions">
+                        <a class="btn btn-success btn-sm" href="{% url 'propositions:accepter' prop.pk %}">✓ Accepter (crée la mission)</a>
                         <a class="btn btn-danger btn-sm" href="{% url 'propositions:refuser' prop.pk %}">Refuser</a>
-                    </p>
+                    </div>
                 {% endif %}
             </div>
         {% endfor %}
     </div>
 {% else %}
-    <div class="empty"><p>Aucune proposition reçue pour l'instant.</p></div>
+    <div class="empty">
+        <div class="big">⏳</div>
+        <p>Aucune proposition reçue pour l'instant.</p>
+    </div>
 {% endif %}
+<p class="card-meta" style="margin-top: 1rem;"><a href="{% url 'demandes:mes_demandes' %}">← Retour à mes demandes</a></p>
 {% endblock %}

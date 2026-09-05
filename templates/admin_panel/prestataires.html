@@ -1,33 +1,48 @@
 {% extends 'base.html' %}
 {% block title %}Prestataires — Back-office{% endblock %}
 {% block content %}
-<div class="page-title">
-    <h2>Prestataires à vérifier</h2>
-    <p class="card-meta"><a href="{% url 'admin_panel:dashboard' %}">← Retour au tableau de bord</a></p>
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">Prestataires</h2>
+            <p>Vérification des comptes prestataires.</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'admin_panel:dashboard' %}">← Tableau de bord</a>
+    </div>
 </div>
 {% if prestataires %}
     <div class="grid">
         {% for p in prestataires %}
-            <div class="card">
-                <h3 class="card-title">{{ p.username }}</h3>
+            <div class="card card-hover">
+                <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem;">
+                    <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800;">
+                        {{ p.username|first|upper }}
+                    </div>
+                    <div>
+                        <h3 class="card-title" style="margin: 0;">{{ p.username }}</h3>
+                        <p class="card-meta">
+                            {% if p.is_verified %}
+                                <span class="badge acceptee">✓ Vérifié</span>
+                            {% else %}
+                                <span class="badge en_attente">À vérifier</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
                 <p class="card-meta">{{ p.company_name|default:'—' }} · {{ p.ville|default:'—' }} · {{ p.email|default:'—' }}</p>
-                <p class="card-meta">
-                    Statut :
-                    {% if p.is_verified %}
-                        <span class="badge acceptee">Vérifié</span>
-                    {% else %}
-                        <span class="badge refusee">Non vérifié</span>
-                    {% endif %}
-                </p>
+                <p class="card-meta">Inscrit le {{ p.date_joined|date:'d/m/Y' }}</p>
                 {% if not p.is_verified %}
-                    <p style="margin-top: 0.75rem;">
-                        <a class="btn btn-success btn-sm" href="{% url 'admin_panel:verifier' p.pk %}">Vérifier</a>
-                    </p>
+                    <div class="actions">
+                        <a class="btn btn-success btn-sm" href="{% url 'admin_panel:verifier' p.pk %}">✓ Vérifier</a>
+                    </div>
                 {% endif %}
             </div>
         {% endfor %}
     </div>
 {% else %}
-    <div class="empty"><p>Aucun prestataire enregistré.</p></div>
+    <div class="empty">
+        <div class="big">🕵️</div>
+        <p>Aucun prestataire enregistré.</p>
+    </div>
 {% endif %}
 {% endblock %}

@@ -1,27 +1,47 @@
 {% extends 'base.html' %}
 {% block title %}Mes missions — TechConnect Bénin{% endblock %}
 {% block content %}
-<div class="page-title"><h2>Mes missions</h2></div>
+<div class="hero-mini">
+    <h2>Mes missions</h2>
+    <p>Les missions en cours et terminées auxquelles tu participes.</p>
+</div>
 {% if missions %}
     <div class="grid">
         {% for mission in missions %}
-            <div class="card">
-                <span class="badge {{ mission.statut }}">{{ mission.get_statut_display }}</span>
+            <div class="card card-hover">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span class="badge {{ mission.statut }}">{{ mission.get_statut_display }}</span>
+                    <span class="card-meta">💰 {{ mission.proposition.prix|default:'—' }} FCFA</span>
+                </div>
                 <h3 class="card-title">
                     <a href="{% url 'propositions:detail_mission' mission.pk %}">{{ mission.demande.titre }}</a>
                 </h3>
                 <p class="card-meta">
-                    {% if mission.client == user %}Client → {% endif %}
-                    Partenaire : {{ mission.prestataire.username }}
-                    {% if mission.client != user %} · Client : {{ mission.client.username }}{% endif %}
+                    {% if mission.client == user %}
+                        👤 Avec : <strong>{{ mission.prestataire.username }}</strong>
+                    {% else %}
+                        👤 Cliente : <strong>{{ mission.client.username }}</strong>
+                    {% endif %}
+                    {% if mission.prestataire.is_verified %}<span class="tag emerald">✓</span>{% endif %}
                 </p>
-                <p style="margin-top: 0.75rem;">
-                    <a class="btn btn-outline btn-sm" href="{% url 'messagerie:fil' mission.pk %}">Message</a>
-                </p>
+                <div class="actions">
+                    <a class="btn btn-outline btn-sm" href="{% url 'propositions:detail_mission' mission.pk %}">Détail</a>
+                    <a class="btn btn-sm" href="{% url 'messagerie:fil' mission.pk %}">💬 Messagerie</a>
+                    {% if mission.statut == 'terminee' %}
+                        <a class="btn btn-accent btn-sm" href="{% url 'propositions:evaluer' mission.pk %}">Évaluer</a>
+                    {% endif %}
+                </div>
             </div>
         {% endfor %}
     </div>
 {% else %}
-    <div class="empty"><p>Aucune mission pour le moment.</p></div>
+    <div class="empty">
+        <div class="big">🤝</div>
+        <p>Aucune mission pour le moment.</p>
+        {% if user.role == 'prestataire' %}
+            <p class="card-meta">Soumets des propositions pour démarrer tes premières missions !</p>
+            <p style="margin-top: 0.8rem;"><a class="btn" href="{% url 'demandes:catalogue' %}">Voir le catalogue</a></p>
+        {% endif %}
+    </div>
 {% endif %}
 {% endblock %}
