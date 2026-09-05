@@ -92,7 +92,7 @@ Base unique : **`techconnect_benin`** (jeu de caractères `utf8mb4`).
 | Champ | Type | Contraintes |
 |---|---|---|
 | hérite de AbstractUser | — | username, email, password (haché) |
-| role | Char(20) | `client` / `prestataire` / `admin` |
+| role | Char(20) | `client` / `prestataire` (accès admin via `is_staff`) |
 | phone | Char(20) | unique, nullable (vérification téléphone) |
 | company_name | Char(150) | blank |
 | ville | Char(100) | blank |
@@ -188,7 +188,7 @@ Paiements : accord direct MVP / escrow Phase future
 ## 5. Règles métier clés
 
 1. **Confidentialité** : un client ne voit **que ses propres demandes** ; les prestataires voient **toutes** les demandes publiques du catalogue (sans données personnelles du client).
-2. **Rôles** : imposés à l'inscription (client ≠ prestataire). Un seul compte = un seul rôle principal.
+2. **Rôles** : imposés à l'inscription (`client` ou `prestataire`). Les accès administrateur sont gérés par le flag Django `is_staff`.
 3. **Accès mission** : la messagerie n'est accessible qu'aux parties d'une mission.
 4. **Évaluation** : uniquement après une mission (note 1 à 5 + commentaire).
 5. **Vérification** : prestataires vérifiés par l'admin (`is_verified`) avant mise en avant.

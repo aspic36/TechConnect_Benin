@@ -6,7 +6,6 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         CLIENT = 'client', 'Client'
         PRESTATAIRE = 'prestataire', 'Prestataire'
-        ADMIN = 'admin', 'Admin'
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CLIENT)
     phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
