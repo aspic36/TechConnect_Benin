@@ -94,6 +94,7 @@ python3 manage.py shell
 
 10. **README.md** à la racine : présentation, fonctionnalités, installation, comptes de démo, cycle de vie, commandes, roadmap.
 11. **Données de démo** : commande `python3 manage.py seed_demo` (7 catégories, 5 comptes démo, 7 demandes à tous les stades, propositions, 2 missions dont 1 évaluée, messages) — tests de navigation OK sur tous les rôles.
+12. **Tests automatisés** : suite complète dans chaque app (`tests.py`), 43 tests OK (auth, demandes, propositions, missions, évaluations, messagerie, back-office). Note infra : lancer `python3 manage.py test` (≈2 min) — si une exécution est interrompue, supprimer la base `test_techconnect_benin` dans le conteneur avant de relancer.
 
 ## 🔲 RESTE À FAIRE (roadmap)
 
@@ -101,7 +102,7 @@ python3 manage.py shell
 - [x] ~~Backend BDD + modèles + vues~~ (fait)
 - [x] ~~README.md~~ (fait)
 - [x] ~~Données de démo~~ (`python3 manage.py seed_demo`)
-- [ ] Tests automatisés versionnés dans chaque app (`tests.py`)
+- [x] ~~Tests automatisés~~ (43 tests OK : accounts, demandes, propositions, messagerie, admin_panel)
 - [ ] README.md à la racine (guide d'installation utilisateur)
 - [ ] Formulaire profil (édition des infos, avatar, bio)
 - [ ] Back-office : modération des demandes (validation `en_attente`), gestion des litiges

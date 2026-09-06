@@ -13,6 +13,8 @@ class PropositionForm(forms.ModelForm):
 
 
 class EvaluationForm(forms.ModelForm):
+    note = forms.IntegerField(min_value=1, max_value=5, label='Note')
+
     class Meta:
         model = Evaluation
         fields = ('note', 'commentaire')

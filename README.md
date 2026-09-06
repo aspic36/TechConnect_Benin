@@ -138,7 +138,7 @@ python3 manage.py shell              # console interactive
 - [x] Backend complet (BDD, modèles, vues, flux métier)
 - [x] Design moderne & coloré (16 pages, responsive)
 - [x] Données de démonstration (`seed_demo`)
-- [ ] Tests automatisés (`tests.py` dans chaque app)
+- [x] Tests automatisés (`tests.py` dans chaque app)
 - [ ] Formulaire d'édition du profil (avatar, bio)
 - [ ] Modération des demandes et gestion des litiges
 - [ ] Paiements Mobile Money (modèle `Paiement` prêt)
