@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import User
+from apps.demandes.models import Demande
 
 
 class AdminPanelTests(TestCase):
@@ -48,3 +49,38 @@ class AdminPanelTests(TestCase):
         self.client.login(username='staff', password='Passw0rd!')
         reponse = self.client.get(reverse('admin_panel:dashboard'))
         self.assertEqual(reponse.context['prestataires_a_verifier'], 2)
+
+
+class ModerationTests(TestCase):
+
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username='staff', password='Passw0rd!', role=User.Role.CLIENT, is_staff=True)
+        self.client_u = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+        self.demande = Demande.objects.create(
+            client=self.client_u, titre='À valider', description='x',
+            statut=Demande.Statut.EN_ATTENTE)
+
+    def test_moderation_reservee_au_staff(self):
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:demandes'))
+        self.assertNotEqual(reponse.status_code, 200)
+
+    def test_liste_seulement_en_attente(self):
+        Demande.objects.create(client=self.client_u, titre='Déjà en cours', description='x',
+                               statut=Demande.Statut.EN_COURS)
+        self.client.login(username='staff', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:demandes'))
+        self.assertEqual(len(reponse.context['demandes']), 1)
+
+    def test_valider_demande(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:valider_demande', args=[self.demande.pk]))
+        self.demande.refresh_from_db()
+        self.assertEqual(self.demande.statut, Demande.Statut.EN_COURS)
+
+    def test_supprimer_demande(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:refuser_demande', args=[self.demande.pk]))
+        self.assertFalse(Demande.objects.filter(pk=self.demande.pk).exists())

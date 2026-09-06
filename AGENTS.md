@@ -95,6 +95,12 @@ python3 manage.py shell
 10. **README.md** à la racine : présentation, fonctionnalités, installation, comptes de démo, cycle de vie, commandes, roadmap.
 11. **Données de démo** : commande `python3 manage.py seed_demo` (7 catégories, 5 comptes démo, 7 demandes à tous les stades, propositions, 2 missions dont 1 évaluée, messages) — tests de navigation OK sur tous les rôles.
 12. **Tests automatisés** : suite complète dans chaque app (`tests.py`), 43 tests OK (auth, demandes, propositions, missions, évaluations, messagerie, back-office). Note infra : lancer `python3 manage.py test` (≈2 min) — si une exécution est interrompue, supprimer la base `test_techconnect_benin` dans le conteneur avant de relancer.
+13. **Fin du logiciel MVP** :
+    - **Formulaire profil** : édition (email, téléphone, ville, société, bio, avatar) + service des médias en dev.
+    - **Modération des demandes** (back-office) : liste des demandes `en_attente`, validation → `en_cours`, suppression ; liens sur le tableau de bord.
+    - **Gestion des litiges** (back-office) : liste des missions `litige`, clôture du litige (mission + demande → `cloturee`).
+    - **Paiements (accord direct MVP)** : le client enregistre un paiement sur la mission (montant + méthode, statut `en_attente`), visible dans la page mission. Escrow / Mobile Money réel = Phase future.
+    - Suite de tests portée à **50 tests OK**.
 
 ## 🔲 RESTE À FAIRE (roadmap)
 
@@ -103,10 +109,9 @@ python3 manage.py shell
 - [x] ~~README.md~~ (fait)
 - [x] ~~Données de démo~~ (`python3 manage.py seed_demo`)
 - [x] ~~Tests automatisés~~ (43 tests OK : accounts, demandes, propositions, messagerie, admin_panel)
-- [ ] README.md à la racine (guide d'installation utilisateur)
-- [ ] Formulaire profil (édition des infos, avatar, bio)
-- [ ] Back-office : modération des demandes (validation `en_attente`), gestion des litiges
-- [ ] Paiements : accord direct MVP → escrow / Mobile Money (Phase future, modèle `Paiement` prêt)
+- [x] ~~Formulaire profil~~ (édition des infos, avatar, bio)
+- [x] ~~Back-office : modération des demandes (validation `en_attente`), gestion des litiges~~
+- [x] ~~Paiements~~ (accord direct MVP : enregistrement d'un paiement par le client) — escrow / Mobile Money en Phase future
 
 **Sécurité & production (Phases 5-6)**
 - [ ] Renforcement : rates limites, protection brute force, validation fichiers upload (avatar)

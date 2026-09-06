@@ -26,5 +26,14 @@ class InscriptionForm(UserCreationForm):
         return user
 
 
+class ProfilForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('email', 'phone', 'ville', 'company_name', 'bio', 'avatar')
+        widgets = {
+            'bio': forms.Textarea(attrs={'rows': 4}),
+        }
+
+
 class ConnexionForm(AuthenticationForm):
     username = forms.CharField(label="Nom d'utilisateur")

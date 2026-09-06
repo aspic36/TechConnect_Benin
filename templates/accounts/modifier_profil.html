@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Modifier mon profil — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">Modifier mon profil</h2>
+            <p>{{ user.username }}</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'accounts:profil' %}">← Retour au profil</a>
+    </div>
+</div>
+<div class="card" style="max-width: 640px;">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for champ in form %}
+            <div class="form-group">
+                <label for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+                {% if champ.errors %}
+                    <p class="form-error">{{ champ.errors|striptags }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div class="actions">
+            <button type="submit" class="btn btn-accent btn-lg">💾 Enregistrer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

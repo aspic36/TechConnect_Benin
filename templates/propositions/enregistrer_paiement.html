@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Enregistrer un paiement — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">Enregistrer un paiement</h2>
+            <p>{{ mission.demande.titre }} — {{ mission.prestataire.username }}</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'propositions:detail_mission' mission.pk %}">← Retour à la mission</a>
+    </div>
+</div>
+<div class="card" style="max-width: 480px;">
+    <p class="card-meta">
+        Proposition acceptée : <span class="tag emerald">💰 {{ mission.proposition.prix|default:'—' }} FCFA</span>
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {% for champ in form %}
+            <div class="form-group">
+                <label for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+                {% if champ.errors %}
+                    <p class="form-error">{{ champ.errors|striptags }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div class="actions">
+            <button type="submit" class="btn btn-accent btn-lg">💾 Enregistrer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -32,4 +32,24 @@
     </div>
 </div>
 {% endif %}
+
+{% if demandes_en_attente %}
+<div class="card" style="border-color: #fde68a;">
+    <h3 class="card-title">📥 Modération</h3>
+    <p class="card-text">{{ demandes_en_attente }} demande(s) en attente de validation.</p>
+    <div class="actions">
+        <a class="btn btn-accent" href="{% url 'admin_panel:demandes' %}">Modérer les demandes</a>
+    </div>
+</div>
+{% endif %}
+
+{% if missions_litiges %}
+<div class="card" style="border-color: var(--danger);">
+    <h3 class="card-title">⚖️ Litiges</h3>
+    <p class="card-text">{{ missions_litiges }} mission(s) en litige à traiter.</p>
+    <div class="actions">
+        <a class="btn btn-danger" href="{% url 'admin_panel:litiges' %}">Traiter les litiges</a>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

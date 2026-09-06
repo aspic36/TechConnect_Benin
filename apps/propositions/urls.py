@@ -14,4 +14,5 @@ urlpatterns = [
     path('missions/<int:pk>/', views.detail_mission, name='detail_mission'),
     path('missions/<int:pk>/clore/', views.clore_mission, name='clore'),
     path('missions/<int:pk>/evaluer/', views.evaluer_mission, name='evaluer'),
+    path('missions/<int:pk>/paiement/', views.enregistrer_paiement, name='paiement'),
 ]

@@ -83,3 +83,16 @@ class ConnexionTests(TestCase):
         self.client.get(reverse('accounts:deconnexion'))
         reponse = self.client.get(reverse('accounts:profil'))
         self.assertEqual(reponse.status_code, 302)
+
+    def test_modification_profil(self):
+        self.client.login(username='client1', password='Passw0rd!')
+        reponse = self.client.post(reverse('accounts:modifier_profil'), {
+            'email': 'nouveau@mail.org',
+            'phone': '97000111',
+            'ville': 'Cotonou',
+            'bio': 'Une bio de test',
+        })
+        self.assertRedirects(reponse, reverse('accounts:profil'))
+        self.client_u.refresh_from_db()
+        self.assertEqual(self.client_u.bio, 'Une bio de test')
+        self.assertEqual(self.client_u.ville, 'Cotonou')

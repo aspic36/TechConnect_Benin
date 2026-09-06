@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Evaluation, Proposition
+from .models import Evaluation, Paiement, Proposition
 
 
 class PropositionForm(forms.ModelForm):
@@ -22,3 +22,9 @@ class EvaluationForm(forms.ModelForm):
             'note': forms.NumberInput(attrs={'min': 1, 'max': 5, 'type': 'range'}),
             'commentaire': forms.Textarea(attrs={'rows': 4}),
         }
+
+
+class PaiementForm(forms.ModelForm):
+    class Meta:
+        model = Paiement
+        fields = ('montant', 'methode')

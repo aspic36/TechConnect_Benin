@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Litiges — Back-office{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">Gestion des litiges</h2>
+        <span class="badge litige">{{ litiges|length }}</span>
+    </div>
+    <p>Missions signalées comme litige par un participant.</p>
+</div>
+
+{% if litiges %}
+    {% for litige in litiges %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                <div>
+                    <h3 class="card-title" style="margin: 0;">{{ litige.demande.titre }}</h3>
+                    <p class="card-meta">
+                        Client : {{ litige.client.username }} · Prestataire : {{ litige.prestataire.username }}
+                    </p>
+                    <p class="card-meta">
+                        Proposition : <span class="tag emerald">💰 {{ litige.proposition.prix|default:'—' }} FCFA</span>
+                    </p>
+                </div>
+                <a class="btn btn-accent btn-sm" href="{% url 'admin_panel:clore_litige' litige.pk %}">✓ Clôturer le litige</a>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">
+        <div class="big">🕊️</div>
+        <p>Aucun litige en cours.</p>
+    </div>
+{% endif %}
+{% endblock %}

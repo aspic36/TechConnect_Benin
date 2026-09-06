@@ -4,8 +4,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.demandes.models import Demande
 
-from .forms import EvaluationForm, PropositionForm
-from .models import Evaluation, Mission, Proposition
+from .forms import EvaluationForm, PaiementForm, PropositionForm
+from .models import Evaluation, Mission, Paiement, Proposition
 
 
 @login_required
@@ -139,3 +139,23 @@ def evaluer_mission(request, pk):
     else:
         form = EvaluationForm()
     return render(request, 'propositions/evaluer.html', {'form': form, 'mission': mission, 'cible': cible})
+
+
+@login_required
+def enregistrer_paiement(request, pk):
+    mission = get_object_or_404(Mission, pk=pk)
+    if request.user != mission.client:
+        messages.error(request, 'Seul le client peut enregistrer un paiement.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    if request.method == 'POST':
+        form = PaiementForm(request.POST)
+        if form.is_valid():
+            paiement = form.save(commit=False)
+            paiement.mission = mission
+            paiement.save()
+            messages.success(request, 'Paiement enregistré.')
+            return redirect('propositions:detail_mission', pk=mission.pk)
+    else:
+        initial = {'montant': mission.proposition.prix} if mission.proposition else {}
+        form = PaiementForm(initial=initial)
+    return render(request, 'propositions/enregistrer_paiement.html', {'form': form, 'mission': mission})

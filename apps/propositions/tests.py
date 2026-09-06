@@ -4,7 +4,7 @@ from django.urls import reverse
 from apps.accounts.models import User
 from apps.demandes.models import Categorie, Demande
 
-from .models import Evaluation, Mission, Proposition
+from .models import Evaluation, Mission, Paiement, Proposition
 
 
 class BaseTests(TestCase):
@@ -182,3 +182,28 @@ class EvaluationTests(BaseTests):
         from .forms import EvaluationForm
         form_invalide = EvaluationForm(data={'note': 6, 'commentaire': 'x'})
         self.assertFalse(form_invalide.is_valid())
+
+
+class PaiementTests(BaseTests):
+
+    def test_seul_le_client_peut_enregistrer(self):
+        mission = self._mission()
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.post(
+            reverse('propositions:paiement', args=[mission.pk]),
+            {'montant': 100000, 'methode': 'especes'},
+        )
+        self.assertEqual(reponse.status_code, 302)
+        self.assertEqual(mission.paiements.count(), 0)
+
+    def test_enregistrer_un_paiement(self):
+        mission = self._mission()
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.post(
+            reverse('propositions:paiement', args=[mission.pk]),
+            {'montant': 100000, 'methode': 'mobile_money'},
+        )
+        paiement = mission.paiements.get()
+        self.assertEqual(paiement.montant, 100000)
+        self.assertEqual(paiement.methode, Paiement.Methode.MOBILE_MONEY)
+        self.assertEqual(paiement.statut, Paiement.Statut.EN_ATTENTE)

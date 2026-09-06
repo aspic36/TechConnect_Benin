@@ -2,14 +2,24 @@
 {% block title %}Mon profil — TechConnect Bénin{% endblock %}
 {% block content %}
 <div class="hero-mini">
-    <h2>Mon profil</h2>
-    <p>{{ user.get_role_display }} — {{ user.username }}</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">Mon profil</h2>
+            <p>{{ user.get_role_display }} — {{ user.username }}</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'accounts:modifier_profil' %}">✏️ Modifier</a>
+    </div>
 </div>
 <div class="card" style="max-width: 620px;">
     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800;">
-            {{ user.username|first|upper }}
-        </div>
+        {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" alt="Avatar"
+                 style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
+        {% else %}
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--gradient); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800;">
+                {{ user.username|first|upper }}
+            </div>
+        {% endif %}
         <div>
             <h3 class="card-title" style="margin: 0;">{{ user.username }}</h3>
             <p class="card-meta">

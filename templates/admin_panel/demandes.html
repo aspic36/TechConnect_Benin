@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Modération des demandes — Back-office{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">Modération des demandes</h2>
+        <span class="badge en_attente">{{ demandes|length }} en attente</span>
+    </div>
+    <p>Validez ou supprimez les demandes en attente. La validation les rend publiques dans le catalogue.</p>
+</div>
+
+{% if demandes %}
+    {% for d in demandes %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                <div>
+                    <h3 class="card-title" style="margin: 0;">{{ d.titre }}</h3>
+                    <p class="card-meta">
+                        {{ d.client.username }} · {{ d.categorie|default:'—' }} ·
+                        {{ d.lieu|default:'—' }} · {{ d.date_creation|date:'d/m/Y' }}
+                    </p>
+                    {% if d.budget_min or d.budget_max %}
+                        <p class="card-meta">
+                            💰 {{ d.budget_min|default:'—' }} – {{ d.budget_max|default:'—' }} FCFA
+                        </p>
+                    {% endif %}
+                </div>
+                <div class="actions" style="margin: 0;">
+                    <a class="btn btn-success btn-sm" href="{% url 'admin_panel:valider_demande' d.pk %}">✓ Valider</a>
+                    <a class="btn btn-danger btn-sm" href="{% url 'admin_panel:refuser_demande' d.pk %}">✕ Supprimer</a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">
+        <div class="big">🎉</div>
+        <p>Aucune demande en attente de modération.</p>
+    </div>
+{% endif %}
+{% endblock %}

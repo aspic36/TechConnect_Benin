@@ -38,3 +38,46 @@ def verifier_prestataire(request, pk):
     prestataire.save()
     messages.success(request, f'{prestataire.username} est maintenant vérifié.')
     return redirect('admin_panel:prestataires')
+
+
+@staff_member_required
+def liste_demandes(request):
+    demandes = Demande.objects.filter(statut=Demande.Statut.EN_ATTENTE).select_related('client', 'categorie')
+    return render(request, 'admin_panel/demandes.html', {'demandes': demandes})
+
+
+@staff_member_required
+def valider_demande(request, pk):
+    demande = Demande.objects.get(pk=pk)
+    demande.statut = Demande.Statut.EN_COURS
+    demande.save()
+    messages.success(request, f'Demande validée : {demande.titre}')
+    return redirect('admin_panel:demandes')
+
+
+@staff_member_required
+def refuser_demande(request, pk):
+    demande = Demande.objects.get(pk=pk)
+    titre = demande.titre
+    demande.delete()
+    messages.success(request, f'Demande supprimée : {titre}')
+    return redirect('admin_panel:demandes')
+
+
+@staff_member_required
+def liste_litiges(request):
+    litiges = Mission.objects.filter(statut=Mission.Statut.LITIGE).select_related(
+        'demande', 'client', 'prestataire'
+    )
+    return render(request, 'admin_panel/litiges.html', {'litiges': litiges})
+
+
+@staff_member_required
+def clore_litige(request, pk):
+    mission = Mission.objects.get(pk=pk)
+    mission.statut = Mission.Statut.CLOTUREE
+    mission.save()
+    mission.demande.statut = Demande.Statut.CLOTUREE
+    mission.demande.save()
+    messages.success(request, f'Litige clôturé : {mission.demande.titre}')
+    return redirect('admin_panel:litiges')

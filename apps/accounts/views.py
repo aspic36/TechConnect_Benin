@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
-from .forms import ConnexionForm, InscriptionForm
+from .forms import ConnexionForm, InscriptionForm, ProfilForm
 
 
 def accueil(request):
@@ -60,3 +60,16 @@ def deconnexion(request):
 @login_required
 def profil(request):
     return render(request, 'accounts/profil.html')
+
+
+@login_required
+def modifier_profil(request):
+    if request.method == 'POST':
+        form = ProfilForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profil mis à jour.')
+            return redirect('accounts:profil')
+    else:
+        form = ProfilForm(instance=request.user)
+    return render(request, 'accounts/modifier_profil.html', {'form': form})
