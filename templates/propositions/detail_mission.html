@@ -31,7 +31,14 @@
 </div>
 
 <div class="card">
-    <h3 class="card-title">⭐ Évaluations</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <h3 class="card-title">⭐ Évaluations</h3>
+        {% if mission.statut == 'terminee' %}
+            <a class="btn btn-outline btn-sm" href="{% url 'propositions:evaluer' mission.pk %}">★ Évaluer la mission</a>
+        {% elif mission.statut == 'en_cours' %}
+            <span class="card-meta">🔒 Disponible après clôture de la mission</span>
+        {% endif %}
+    </div>
     {% for eval in mission.evaluations.all %}
         <div style="display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border);">
             <span style="font-size: 1.2rem;">{{ eval.note }}<small>/5</small></span>
