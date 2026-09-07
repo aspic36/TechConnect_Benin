@@ -143,6 +143,7 @@ python3 manage.py shell              # console interactive
 - [x] Back-office : modération des demandes et gestion des litiges
 - [x] Paiements (accord direct ; escrow / Mobile Money en Phase future)
 - [x] Sécurité : anti brute-force connexion, validation des avatars
+- [x] Sauvegardes MySQL automatiques (cron, rotation 14 jours)
 - [ ] Déploiement production (Linux + Nginx + HTTPS)
 - [ ] API REST + application mobile (Flutter)
 

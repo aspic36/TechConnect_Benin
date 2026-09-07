@@ -107,6 +107,10 @@ python3 manage.py shell
     - **Fix confidentialité** : un client ne peut plus voir la page d'une demande d'un **autre** client.
     - Réglages `settings.py` : `SECURE_CONTENT_TYPE_NOSNIFF`, `SECURE_REFERRER_POLICY`, et options HTTPS activées hors `DEBUG`.
     - `Pillow` déclaré dans `requirements.txt`. Suite portée à **57 tests OK**.
+15. **Sauvegardes MySQL automatiques** :
+    - Script `scripts/backup_db.sh` : `mysqldump` via `docker exec` (root, mot de passe lu dans `.env`), compression gzip, rotation **14 jours**.
+    - Programmé par cron : **chaque nuit à 03h30** (`30 3 * * * bash .../scripts/backup_db.sh`), log dans `/tmp/techconnect_backup.log`.
+    - Restauration testée avec succès (base de test temporaire). Le dossier `backups/` est ignoré par git (données sensibles).
 
 ## 🔲 RESTE À FAIRE (roadmap)
 
@@ -121,8 +125,8 @@ python3 manage.py shell
 
 **Sécurité & production (Phases 5-6)**
 - [x] ~~Renforcement n°1 : anti brute-force connexion, validation uploads (avatar)~~
+- [x] ~~Sauvegardes régulières MySQL (cron 03h30, rotation 14 jours)~~
 - [ ] Déploiement Linux + Nginx + HTTPS
-- [ ] Sauvegardes régulières MySQL configurées
 - [ ] Phase bêta fermée avec premiers utilisateurs au Bénin
 
 **Mobile (Phase 2)**
