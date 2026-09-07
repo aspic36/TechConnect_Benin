@@ -74,6 +74,11 @@ class DemandeTests(TestCase):
         reponse = self.client.get(reverse('demandes:detail_demande', args=[self.demande.pk]))
         self.assertEqual(reponse.status_code, 200)
 
+    def test_detail_cache_aux_autres_clients(self):
+        self.client.login(username='client2', password='Passw0rd!')
+        reponse = self.client.get(reverse('demandes:detail_demande', args=[self.demande.pk]))
+        self.assertRedirects(reponse, reverse('demandes:mes_demandes'))
+
     def test_detail_demande_non_publique_bloque(self):
         privee = Demande.objects.create(client=self.client_u, titre='Privée',
                                         description='x', statut=Demande.Statut.EN_ATTENTE)

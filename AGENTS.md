@@ -101,6 +101,12 @@ python3 manage.py shell
     - **Gestion des litiges** (back-office) : liste des missions `litige`, clôture du litige (mission + demande → `cloturee`).
     - **Paiements (accord direct MVP)** : le client enregistre un paiement sur la mission (montant + méthode, statut `en_attente`), visible dans la page mission. Escrow / Mobile Money réel = Phase future.
     - Suite de tests portée à **50 tests OK**.
+14. **Sécurité — renforcement n°1** :
+    - **Anti brute-force** à la connexion (cache Django, 5 échecs → blocage 15 min, succès = réinitialisation).
+    - **Validation des avatars** : extensions `jpg/jpeg/png/gif/webp` + taille max **5 Mo** (migration `0003`).
+    - **Fix confidentialité** : un client ne peut plus voir la page d'une demande d'un **autre** client.
+    - Réglages `settings.py` : `SECURE_CONTENT_TYPE_NOSNIFF`, `SECURE_REFERRER_POLICY`, et options HTTPS activées hors `DEBUG`.
+    - `Pillow` déclaré dans `requirements.txt`. Suite portée à **57 tests OK**.
 
 ## 🔲 RESTE À FAIRE (roadmap)
 
@@ -114,7 +120,7 @@ python3 manage.py shell
 - [x] ~~Paiements~~ (accord direct MVP : enregistrement d'un paiement par le client) — escrow / Mobile Money en Phase future
 
 **Sécurité & production (Phases 5-6)**
-- [ ] Renforcement : rates limites, protection brute force, validation fichiers upload (avatar)
+- [x] ~~Renforcement n°1 : anti brute-force connexion, validation uploads (avatar)~~
 - [ ] Déploiement Linux + Nginx + HTTPS
 - [ ] Sauvegardes régulières MySQL configurées
 - [ ] Phase bêta fermée avec premiers utilisateurs au Bénin

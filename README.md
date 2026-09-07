@@ -142,6 +142,7 @@ python3 manage.py shell              # console interactive
 - [x] Édition du profil (avatar, bio, coordonnées)
 - [x] Back-office : modération des demandes et gestion des litiges
 - [x] Paiements (accord direct ; escrow / Mobile Money en Phase future)
+- [x] Sécurité : anti brute-force connexion, validation des avatars
 - [ ] Déploiement production (Linux + Nginx + HTTPS)
 - [ ] API REST + application mobile (Flutter)
 

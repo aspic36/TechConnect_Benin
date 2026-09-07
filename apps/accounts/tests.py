@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
@@ -96,3 +97,84 @@ class ConnexionTests(TestCase):
         self.client_u.refresh_from_db()
         self.assertEqual(self.client_u.bio, 'Une bio de test')
         self.assertEqual(self.client_u.ville, 'Cotonou')
+
+
+class ValidationAvatarTests(TestCase):
+
+    def setUp(self):
+        self.utilisateur = User.objects.create_user(
+            username='testavatar', password='Passw0rd!', role=User.Role.CLIENT)
+        self.client.login(username='testavatar', password='Passw0rd!')
+
+    def _poster_avatar(self, nom, contenu, type_mime):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return self.client.post(reverse('accounts:modifier_profil'), {
+            'avatar': SimpleUploadedFile(nom, contenu, content_type=type_mime),
+        })
+
+    def test_extension_interdite_refusee(self):
+        reponse = self._poster_avatar('fichier.exe', b'non-une-image', 'application/x-msdownload')
+        self.assertEqual(reponse.status_code, 200)
+        self.utilisateur.refresh_from_db()
+        self.assertFalse(self.utilisateur.avatar)
+
+    def test_image_valide_acceptee(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        from io import BytesIO
+        buffer = BytesIO()
+        Image.new('RGB', (10, 10), 'indigo').save(buffer, format='PNG')
+        reponse = self.client.post(reverse('accounts:modifier_profil'), {
+            'avatar': SimpleUploadedFile('avatar.png', buffer.getvalue(), content_type='image/png'),
+        })
+        self.assertRedirects(reponse, reverse('accounts:profil'))
+        self.utilisateur.refresh_from_db()
+        self.assertTrue(self.utilisateur.avatar)
+
+    def test_avatar_trop_lourd_refuse(self):
+        from django.core.exceptions import ValidationError
+        from .validators import TAILLE_MAX_AVATAR_OCTETS, valider_taille_avatar
+
+        class Fichier:
+            def __init__(self, size):
+                self.size = size
+
+        with self.assertRaises(ValidationError):
+            valider_taille_avatar(Fichier(TAILLE_MAX_AVATAR_OCTETS + 1))
+        valider_taille_avatar(Fichier(TAILLE_MAX_AVATAR_OCTETS))
+
+
+class ProtectionBruteForceTests(TestCase):
+
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user(
+            username='victime', password='Passw0rd!', role=User.Role.CLIENT)
+
+    def tearDown(self):
+        cache.clear()
+
+    def _tentative(self, password):
+        return self.client.post(reverse('accounts:connexion'), {
+            'username': 'victime', 'password': password,
+        })
+
+    def test_connexion_bloquee_apres_cinq_echecs(self):
+        for _ in range(5):
+            self._tentative('mauvais')
+        response = self._tentative('Passw0rd!')
+        self.assertNotContains(response, 'Content de te revoir')
+        self.assertContains(response, 'Trop de tentatives échouées')
+
+    def test_succes_reinitialise_le_compteur(self):
+        self._tentative('mauvais')
+        self._tentative('Passw0rd!')
+        reponse = self.client.get(reverse('accounts:profil'))
+        self.assertEqual(reponse.status_code, 200)
+
+    def test_utilisateur_authentifie_ignore(self):
+        self.client.login(username='victime', password='Passw0rd!')
+        reponse = self.client.post(reverse('accounts:connexion'), {
+            'username': 'victime', 'password': 'Passw0rd!',
+        })
+        self.assertEqual(reponse.status_code, 302)

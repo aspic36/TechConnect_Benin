@@ -51,7 +51,11 @@ def catalogue(request):
 @login_required
 def detail_demande(request, pk):
     demande = get_object_or_404(Demande, pk=pk)
-    if request.user.role != 'client' and demande.statut != Demande.Statut.EN_COURS:
+    est_proprietaire = demande.client == request.user
+    est_prestataire_public = (
+        request.user.role == 'prestataire' and demande.statut == Demande.Statut.EN_COURS
+    )
+    if not (est_proprietaire or est_prestataire_public):
         messages.error(request, 'Cette demande n\'est pas publique.')
         return redirect('demandes:mes_demandes')
     return render(request, 'demandes/detail_demande.html', {'demande': demande})

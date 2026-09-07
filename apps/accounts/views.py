@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from .forms import ConnexionForm, InscriptionForm, ProfilForm
+from .security import enregistrer_echec, reinitialiser_echecs, tentative_autorisee
 
 
 def accueil(request):
@@ -39,12 +40,19 @@ def connexion(request):
     if request.user.is_authenticated:
         return redirect(accueil_selon_role(request.user))
     if request.method == 'POST':
-        form = ConnexionForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            messages.success(request, f'Content de te revoir {user.username} !')
-            return redirect(accueil_selon_role(user))
+        login_saisi = request.POST.get('username', '')
+        if not tentative_autorisee(login_saisi):
+            messages.error(request, 'Trop de tentatives échouées. Réessaie dans 15 minutes.')
+            form = ConnexionForm()
+        else:
+            form = ConnexionForm(request, data=request.POST)
+            if form.is_valid():
+                user = form.get_user()
+                login(request, user)
+                reinitialiser_echecs(login_saisi)
+                messages.success(request, f'Content de te revoir {user.username} !')
+                return redirect(accueil_selon_role(user))
+            enregistrer_echec(login_saisi)
     else:
         form = ConnexionForm()
     return render(request, 'accounts/connexion.html', {'form': form})

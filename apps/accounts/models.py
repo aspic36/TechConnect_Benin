@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from .validators import EXTENSIONS_AVATAR, valider_taille_avatar
+
 
 class User(AbstractUser):
     class Role(models.TextChoices):
@@ -12,7 +14,10 @@ class User(AbstractUser):
     company_name = models.CharField(max_length=150, blank=True)
     ville = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    avatar = models.ImageField(
+        upload_to='avatars/', blank=True, null=True,
+        validators=[EXTENSIONS_AVATAR, valider_taille_avatar],
+    )
     is_verified = models.BooleanField(default=False)
 
     def __str__(self):
