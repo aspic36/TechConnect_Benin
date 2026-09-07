@@ -49,7 +49,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
         <h3 class="card-title">💳 Paiements</h3>
         {% if mission.client == user %}
-            <a class="btn btn-ghost btn-sm" href="{% url 'propositions:paiement' mission.pk %}">+ Enregistrer un paiement</a>
+            <a class="btn btn-outline btn-sm" href="{% url 'propositions:paiement' mission.pk %}">+ Enregistrer un paiement</a>
         {% endif %}
     </div>
     {% for paiement in mission.paiements.all %}
