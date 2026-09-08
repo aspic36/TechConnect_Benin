@@ -12,17 +12,17 @@
 </div>
 
 <div class="stat-grid">
-    <div class="stat"><div class="stat-value">{{ total_clients }}</div><div class="stat-label">Clients</div></div>
-    <div class="stat"><div class="stat-value">{{ total_prestataires }}</div><div class="stat-label">Prestataires</div></div>
-    <div class="stat"><div class="stat-value" style="color: var(--accent);">{{ prestataires_a_verifier }}</div><div class="stat-label">À vérifier</div></div>
-    <div class="stat"><div class="stat-value">{{ total_demandes }}</div><div class="stat-label">Demandes</div></div>
-    <div class="stat"><div class="stat-value" style="color: var(--accent);">{{ demandes_en_attente }}</div><div class="stat-label">En attente</div></div>
-    <div class="stat"><div class="stat-value">{{ demandes_en_cours }}</div><div class="stat-label">Demandes en cours</div></div>
-    <div class="stat"><div class="stat-value">{{ missions_en_cours }}</div><div class="stat-label">Missions en cours</div></div>
-    <div class="stat"><div class="stat-value" style="color: var(--success);">{{ missions_terminees }}</div><div class="stat-label">Missions terminées</div></div>
-    <div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div>
-    <div class="stat"><div class="stat-value" style="color: var(--accent);">{{ commissions_en_attente }}</div><div class="stat-label">Commissions dues</div></div>
-    <div class="stat"><div class="stat-value" style="color: var(--danger);">{{ commissions_en_retard }}</div><div class="stat-label">Commissions en retard</div></div>
+    <a class="stat-link" href="{% url 'admin:accounts_user_changelist' %}"><div class="stat"><div class="stat-value">{{ total_clients }}</div><div class="stat-label">Clients</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:prestataires' %}"><div class="stat"><div class="stat-value">{{ total_prestataires }}</div><div class="stat-label">Prestataires</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:prestataires' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ prestataires_a_verifier }}</div><div class="stat-label">À vérifier</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:demandes' %}"><div class="stat"><div class="stat-value">{{ total_demandes }}</div><div class="stat-label">Demandes</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:demandes' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ demandes_en_attente }}</div><div class="stat-label">En attente</div></div></a>
+    <a class="stat-link" href="{% url 'admin:demandes_demande_changelist' %}?statut=en_cours"><div class="stat"><div class="stat-value">{{ demandes_en_cours }}</div><div class="stat-label">Demandes en cours</div></div></a>
+    <a class="stat-link" href="{% url 'admin:propositions_mission_changelist' %}?statut=en_cours"><div class="stat"><div class="stat-value">{{ missions_en_cours }}</div><div class="stat-label">Missions en cours</div></div></a>
+    <a class="stat-link" href="{% url 'admin:propositions_mission_changelist' %}?statut=terminee"><div class="stat"><div class="stat-value" style="color: var(--success);">{{ missions_terminees }}</div><div class="stat-label">Missions terminées</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:litiges' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ commissions_en_attente }}</div><div class="stat-label">Commissions dues</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ commissions_en_retard }}</div><div class="stat-label">Commissions en retard</div></div></a>
 </div>
 
 {% if prestataires_a_verifier %}

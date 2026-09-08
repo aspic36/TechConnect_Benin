@@ -284,6 +284,15 @@ h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
 .stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--gradient); }
 .stat-value { font-size: 1.7rem; font-weight: 800; color: var(--primary); }
 .stat-label { color: var(--text-muted); font-size: 0.82rem; }
+.stat-link {
+    display: block;
+    text-decoration: none;
+    border-radius: var(--radius);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.stat-link:hover { transform: translateY(-3px); box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.35); }
+.stat-link:hover .stat-label { color: var(--accent); }
+.stat-link:active { transform: translateY(0); }
 
 /* ================= FORMS ================= */
 .form-card { max-width: 520px; margin: 0 auto; }
