@@ -111,6 +111,12 @@ python3 manage.py shell
     - Script `scripts/backup_db.sh` : `mysqldump` via `docker exec` (root, mot de passe lu dans `.env`), compression gzip, rotation **14 jours**.
     - Programmé par cron : **chaque nuit à 03h30** (`30 3 * * * bash .../scripts/backup_db.sh`), log dans `/tmp/techconnect_backup.log`.
     - Restauration testée avec succès (base de test temporaire). Le dossier `backups/` est ignoré par git (données sensibles).
+16. **Monétisation — commission 10% + sanctions (accord direct)** :
+    - Le client paie le prestataire à la fin ; à chaque clôture de mission, une **Commission** (10% du prix) est créée avec une **date limite de 7 jours** (`COMMISSION_DELAI_JOURS`).
+    - Le prestataire déclare son règlement (`regler_commission`), l'**admin confirme** dans le back-office (`commissions/`).
+    - Sanctions automatiques (commande `verifier_commissions`, cron **04h10**) : commission en retard → **suspension** (champ `suspendu` + middleware bloquant tout sauf la page de règlement) ; suspension de 7 jours → **bannissement** (`is_active = False`).
+    - Commandes manuelles admin : `suspendre` / `bannir` / `reactiver` un prestataire (page `prestataires/`).
+    - Suite portée à **68 tests OK**.
 
 ## 🔲 RESTE À FAIRE (roadmap)
 

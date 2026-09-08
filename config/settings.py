@@ -92,6 +92,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Restreint les prestataires suspendus (commission impayée) à la seule page
+    # de règlement de leur commission.
+    'apps.accounts.middleware.SuspensionMiddleware',
 ]
 
 # ---------------------------------------------------------------------------
@@ -204,6 +207,17 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# ---------------------------------------------------------------------------
+# Économie de la plateforme
+# ---------------------------------------------------------------------------
+# Commission prélevée sur le prix de chaque mission (accord direct : le client
+# paie le prestataire, qui reverse ensuite la commission à la plateforme).
+COMMISSION_POURCENT = 10
+# Délai accordé au prestataire pour régler sa commission après la clôture.
+COMMISSION_DELAI_JOURS = 7
+# Délai de suspension accordé avant le bannissement définitif du prestataire.
+COMMISSION_SUSPENSION_JOURS = 7
 
 # ---------------------------------------------------------------------------
 # Fichiers statiques (CSS, JS, images, fonts)

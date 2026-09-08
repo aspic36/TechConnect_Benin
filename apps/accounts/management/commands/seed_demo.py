@@ -21,7 +21,7 @@ from django.utils import timezone
 from apps.accounts.models import User
 from apps.demandes.models import Categorie, Demande
 from apps.messagerie.models import Message
-from apps.propositions.models import Evaluation, Mission, Proposition
+from apps.propositions.models import Commission, Evaluation, Mission, Proposition
 
 # Mot de passe unique pour tous les comptes de demonstration
 MOT_DE_PASSE = 'Demo@2026!'
@@ -235,7 +235,16 @@ class Command(BaseCommand):
         )
         self.stdout.write('Évaluations de démo créées.')
 
-        # --- 10. Message de succes ---
+        # --- 10. Commission plateforme (10% de la mission terinée m7) ---
+        # Montant : 10% de 100000 FCFA = 10000 FCFA, à régler sous 7 jours.
+        Commission.objects.create(
+            mission=m7,
+            montant=p7a.prix * 10 // 100,
+            date_limite=maintenant + timedelta(days=2),
+        )
+        self.stdout.write('Commission de démo créée.')
+
+        # --- 11. Message de succes ---
         self.stdout.write(self.style.SUCCESS(
             'Données de démo prêtes ! Comptes (mot de passe "Demo@2026!") : '
             'amina (client), codjo (client), yves (prestataire), '

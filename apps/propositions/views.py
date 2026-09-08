@@ -6,14 +6,18 @@ soumission d'une offre par un prestataire, acceptation/refus par le client,
 lancement et clôture de mission, évaluation (note 1-5) et paiement accord direct.
 """
 
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from apps.demandes.models import Demande
 
-from .forms import EvaluationForm, PaiementForm, PropositionForm
-from .models import Evaluation, Mission, Paiement, Proposition
+from .forms import EvaluationForm, PaiementForm, PropositionForm, ReglementCommissionForm
+from .models import Commission, Evaluation, Mission, Paiement, Proposition
 
 
 @login_required
@@ -145,8 +149,65 @@ def clore_mission(request, pk):
     # La demande associée est clôturée en même temps que la mission.
     mission.demande.statut = Demande.Statut.CLOTUREE
     mission.demande.save()
+    # La clôture déclenche la création de la commission de la plateforme (10 %
+    # du prix) qui doit être réglée par le prestataire sous quelques jours.
+    # Idempotent : la commission n'est créée qu'une seule fois par mission.
+    if not hasattr(mission, 'commission'):
+        commission_pourcent = settings.COMMISSION_POURCENT
+        montant = mission.proposition.prix * commission_pourcent // 100
+        Commission.objects.create(
+            mission=mission,
+            montant=montant,
+            date_limite=timezone.now() + timedelta(days=settings.COMMISSION_DELAI_JOURS),
+        )
+        messages.info(
+            request,
+            f'Commission plateforme : {montant} FCFA ({commission_pourcent}%) à régler '
+            f'sous {settings.COMMISSION_DELAI_JOURS} jours.',
+        )
     messages.success(request, 'Mission clôturée. Merci !')
     return redirect('propositions:detail_mission', pk=mission.pk)
+
+
+@login_required
+def mes_commissions(request):
+    """Liste les commissions dues par le prestataire connecté, des plus urgentes aux moins urgentes."""
+    if request.user.role != 'prestataire':
+        messages.error(request, 'Seul un prestataire a des commissions à régler.')
+        return redirect('propositions:liste_missions')
+    commissions = Commission.objects.filter(
+        mission__prestataire=request.user,
+    ).select_related('mission__demande', 'mission__client').order_by('date_limite')
+    return render(request, 'propositions/mes_commissions.html', {'commissions': commissions})
+
+
+@login_required
+def regler_commission(request, pk):
+    """Permet au prestataire de déclarer le règlement de sa commission."""
+    commission = get_object_or_404(Commission, pk=pk, mission__prestataire=request.user)
+    # Seul le prestataire concerné peut régler sa propre commission.
+    if request.user != commission.mission.prestataire:
+        messages.error(request, 'Action impossible.')
+        return redirect('propositions:mes_commissions')
+    if commission.statut == Commission.Statut.PAYEE:
+        messages.info(request, 'Cette commission est déjà réglée.')
+        return redirect('propositions:mes_commissions')
+    if request.method == 'POST':
+        form = ReglementCommissionForm(request.POST, instance=commission)
+        if form.is_valid():
+            # Enregistre la déclaration : le paiement reste en attente jusqu'à
+            # la confirmation de l'administrateur dans le back-office.
+            commission = form.save(commit=False)
+            commission.date_declaration = timezone.now()
+            commission.save()
+            messages.success(
+                request,
+                'Règlement déclaré. Un administrateur va confirmer ta commission.',
+            )
+            return redirect('propositions:mes_commissions')
+    else:
+        form = ReglementCommissionForm()
+    return render(request, 'propositions/regler_commission.html', {'form': form, 'commission': commission})
 
 
 @login_required

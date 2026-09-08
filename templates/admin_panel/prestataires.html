@@ -26,6 +26,11 @@
                             {% else %}
                                 <span class="badge en_attente">À vérifier</span>
                             {% endif %}
+                            {% if not p.is_active %}
+                                <span class="badge litige" style="margin-left: 0.3rem;">Banni</span>
+                            {% elif p.suspendu %}
+                                <span class="badge litige" style="margin-left: 0.3rem;">Suspendu</span>
+                            {% endif %}
                         </p>
                     </div>
                 </div>
@@ -34,6 +39,21 @@
                 {% if not p.is_verified %}
                     <div class="actions">
                         <a class="btn btn-success btn-sm" href="{% url 'admin_panel:verifier' p.pk %}">✓ Vérifier</a>
+                    </div>
+                {% endif %}
+                {% if not p.is_active %}
+                    <div class="actions">
+                        <a class="btn btn-ghost btn-sm" href="{% url 'admin_panel:reactiver' p.pk %}">↻ Réactiver</a>
+                    </div>
+                {% elif p.suspendu %}
+                    <div class="actions">
+                        <a class="btn btn-ghost btn-sm" href="{% url 'admin_panel:reactiver' p.pk %}">↻ Réactiver</a>
+                        <a class="btn btn-danger btn-sm" href="{% url 'admin_panel:bannir' p.pk %}">Ban</a>
+                    </div>
+                {% else %}
+                    <div class="actions">
+                        <a class="btn btn-danger btn-sm" href="{% url 'admin_panel:suspendre' p.pk %}">Suspendre</a>
+                        <a class="btn btn-danger btn-sm" href="{% url 'admin_panel:bannir' p.pk %}">Ban</a>
                     </div>
                 {% endif %}
             </div>

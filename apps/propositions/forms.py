@@ -7,7 +7,7 @@ l'évaluation d'une mission (note 1-5) et l'enregistrement d'un paiement par le 
 
 from django import forms
 
-from .models import Evaluation, Paiement, Proposition
+from .models import Commission, Evaluation, Paiement, Proposition
 
 
 class PropositionForm(forms.ModelForm):
@@ -42,3 +42,19 @@ class PaiementForm(forms.ModelForm):
     class Meta:
         model = Paiement
         fields = ('montant', 'methode')
+
+
+class ReglementCommissionForm(forms.ModelForm):
+    """Formulaire de déclaration de règlement de la commission par le prestataire.
+
+    Le prestataire indique simplement la méthode utilisée : le montant est
+    fixe (calculé automatiquement) et le paiement reste « en attente » tant
+    que l'administrateur ne l'a pas confirmé dans le back-office.
+    """
+
+    class Meta:
+        model = Commission
+        fields = ('methode',)
+        labels = {
+            'methode': 'Moyen de paiement utilisé pour régler la commission',
+        }

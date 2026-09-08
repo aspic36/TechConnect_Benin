@@ -70,6 +70,21 @@
     {% endfor %}
 </div>
 
+{% if mission.commission %}
+<div class="card" style="border-color: #c7d2fe;">
+    <h3 class="card-title">🚀 Commission plateforme</h3>
+    <p class="card-text">
+        <span class="tag emerald">💰 {{ mission.commission.montant }} FCFA</span>
+        <span class="badge {{ mission.commission.statut }}">{{ mission.commission.get_statut_display }}</span>
+        {% if mission.commission.en_retard %}<span class="badge litige">En retard</span>{% endif %}
+    </p>
+    <p class="card-meta">
+        Due par le prestataire avant le {{ mission.commission.date_limite|date:'d/m/Y H:i' }}
+        {% if mission.commission.date_paiement %} · Réglée le {{ mission.commission.date_paiement|date:'d/m/Y' }}{% endif %}
+    </p>
+</div>
+{% endif %}
+
 <div class="actions" style="margin-top: 1.2rem;">
     <a class="btn btn-lg" href="{% url 'messagerie:fil' mission.pk %}">💬 Ouvrir la messagerie</a>
     {% if mission.statut == 'en_cours' %}

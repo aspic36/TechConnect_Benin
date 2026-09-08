@@ -17,6 +17,7 @@ Plateforme béninoise de mise en relation entre **clients** (besoins informatiqu
 - Soumettre une proposition (prix, délais, message)
 - Suivre ses propositions et ses missions
 - Recevoir les évaluations des clients
+- Régler ses commissions (10% du prix des missions clôturées)
 
 **🔵 Commun**
 - Messagerie intégrée par mission (restreinte aux 2 parties)
@@ -25,6 +26,8 @@ Plateforme béninoise de mise en relation entre **clients** (besoins informatiqu
 **🛠 Back-office (admin)**
 - Tableau de bord (stats clients, prestataires, demandes, missions)
 - Vérification des comptes prestataires
+- Confirmation des règlements de commission (avec prolongation possible)
+- Sanctions manuelles : suspendre / bannir / réactiver un prestataire
 
 ## 🧱 Stack technique
 
@@ -144,6 +147,7 @@ python3 manage.py shell              # console interactive
 - [x] Paiements (accord direct ; escrow / Mobile Money en Phase future)
 - [x] Sécurité : anti brute-force connexion, validation des avatars
 - [x] Sauvegardes MySQL automatiques (cron, rotation 14 jours)
+- [x] Monétisation : commission 10% + sanctions (suspension → bannissement)
 - [ ] Déploiement production (Linux + Nginx + HTTPS)
 - [ ] API REST + application mobile (Flutter)
 

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Régler ma commission — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">Régler ma commission</h2>
+            <p>{{ commission.mission.demande.titre }}</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'propositions:mes_commissions' %}">← Mes commissions</a>
+    </div>
+</div>
+<div class="card" style="max-width: 480px;">
+    <p class="card-meta">
+        Montant à régler : <span class="tag emerald">💰 {{ commission.montant }} FCFA</span>
+    </p>
+    <p class="card-meta">
+        Date limite : {{ commission.date_limite|date:'d/m/Y H:i' }}
+        {% if commission.en_retard %}
+            <span class="badge litige">En retard</span>
+        {% endif %}
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {% for champ in form %}
+            <div class="form-group">
+                <label for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+                {% if champ.errors %}
+                    <p class="form-error">{{ champ.errors|striptags }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <p class="card-meta">Après validation, un administrateur confirmera ton règlement.</p>
+        <div class="actions">
+            <button type="submit" class="btn btn-accent btn-lg">💾 Déclarer mon règlement</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

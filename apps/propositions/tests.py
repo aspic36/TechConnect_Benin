@@ -1,10 +1,11 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.demandes.models import Categorie, Demande
 
-from .models import Evaluation, Mission, Paiement, Proposition
+from .models import Commission, Evaluation, Mission, Paiement, Proposition
 
 
 class BaseTests(TestCase):
@@ -207,3 +208,112 @@ class PaiementTests(BaseTests):
         self.assertEqual(paiement.montant, 100000)
         self.assertEqual(paiement.methode, Paiement.Methode.MOBILE_MONEY)
         self.assertEqual(paiement.statut, Paiement.Statut.EN_ATTENTE)
+
+
+class CommissionTests(BaseTests):
+
+    def test_clore_mission_cree_commission_de_10_pourcent(self):
+        from django.conf import settings
+        mission = self._mission()
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.get(reverse('propositions:clore', args=[mission.pk]))
+        commission = Commission.objects.get(mission=mission)
+        # 10% de 100000 FCFA
+        self.assertEqual(commission.montant, 10000)
+        self.assertEqual(commission.statut, Commission.Statut.EN_ATTENTE)
+        delai = (commission.date_limite - mission.date_creation).days
+        self.assertEqual(delai, settings.COMMISSION_DELAI_JOURS)
+
+    def test_clore_mission_ne_cree_pas_de_double_commission(self):
+        mission = self._mission()
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.get(reverse('propositions:clore', args=[mission.pk]))
+        self.client.get(reverse('propositions:clore', args=[mission.pk]))
+        self.assertEqual(Commission.objects.filter(mission=mission).count(), 1)
+
+    def test_mes_commissions_reservees_aux_prestataires(self):
+        mission = self._mission()
+        mission.statut = Mission.Statut.TERMINEE
+        mission.save()
+        Commission.objects.create(
+            mission=mission, montant=10000,
+            date_limite=timezone.now(),
+        )
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('propositions:mes_commissions'))
+        self.assertRedirects(reponse, reverse('propositions:liste_missions'))
+
+    def test_regler_commission_cree_declaration(self):
+        mission = self._mission()
+        mission.statut = Mission.Statut.TERMINEE
+        mission.save()
+        commission = Commission.objects.create(
+            mission=mission, montant=10000,
+            date_limite=timezone.now(),
+        )
+        self.client.login(username='presta', password='Passw0rd!')
+        self.client.post(
+            reverse('propositions:regler_commission', args=[commission.pk]),
+            {'methode': 'mobile_money'},
+        )
+        commission.refresh_from_db()
+        self.assertIsNotNone(commission.date_declaration)
+        self.assertEqual(commission.statut, Commission.Statut.EN_ATTENTE)
+
+
+class SanctionsAutomatiquesTests(BaseTests):
+
+    def test_verifier_commissions_suspend_apres_la_date_limite(self):
+        from django.core.management import call_command
+        mission = self._mission()
+        Commission.objects.create(
+            mission=mission, montant=10000,
+            date_limite=timezone.now() - timezone.timedelta(days=1),
+        )
+        call_command('verifier_commissions')
+        self.presta.refresh_from_db()
+        self.assertTrue(self.presta.suspendu)
+
+    def test_verifier_commissions_ignore_les_commissions_a_jour(self):
+        from django.core.management import call_command
+        mission = self._mission()
+        Commission.objects.create(
+            mission=mission, montant=10000,
+            date_limite=timezone.now() + timezone.timedelta(days=5),
+        )
+        call_command('verifier_commissions')
+        self.presta.refresh_from_db()
+        self.assertFalse(self.presta.suspendu)
+
+    def test_verifier_commissions_bannit_apres_la_suspension_limite(self):
+        from django.conf import settings
+        from django.core.management import call_command
+        mission = self._mission()
+        Commission.objects.create(
+            mission=mission, montant=10000,
+            date_limite=timezone.now() - timezone.timedelta(days=1),
+        )
+        self.presta.suspendu = True
+        self.presta.date_suspension = timezone.now() - timezone.timedelta(
+            days=settings.COMMISSION_SUSPENSION_JOURS + 1)
+        self.presta.save()
+        call_command('verifier_commissions')
+        self.presta.refresh_from_db()
+        self.assertFalse(self.presta.is_active)
+        self.assertFalse(self.presta.suspendu)
+
+    def test_middleware_redirige_le_prestataire_suspendu(self):
+        mission = self._mission()
+        Commission.objects.create(
+            mission=mission, montant=10000,
+            date_limite=timezone.now() - timezone.timedelta(days=1),
+        )
+        self.presta.suspendu = True
+        self.presta.save()
+        self.client.login(username='presta', password='Passw0rd!')
+        # Une page normale est bloquée par le middleware…
+        reponse = self.client.get(reverse('propositions:mes_propositions'))
+        self.assertRedirects(reponse, reverse('propositions:mes_commissions'))
+        # …mais la page de règlement reste accessible.
+        reponse = self.client.get(reverse('propositions:mes_commissions'))
+        self.assertEqual(reponse.status_code, 200)

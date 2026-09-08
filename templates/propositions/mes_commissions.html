@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Mes commissions — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">Mes commissions</h2>
+        <span class="badge en_attente">{{ commissions|length }}</span>
+    </div>
+    <p>10% du montant de chaque mission clôturée sont reversés à la plateforme.</p>
+</div>
+
+{% if user.suspendu %}
+    <div class="card" style="border-color: var(--danger);">
+        <h3 class="card-title">⚠️ Compte suspendu</h3>
+        <p class="card-text">
+            Ta commission est en retard : tant qu'elle n'est pas réglée et confirmée,
+            tu ne peux plus soumettre de propositions ni accéder au reste de la plateforme.
+        </p>
+    </div>
+{% endif %}
+
+{% if commissions %}
+    {% for c in commissions %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                <div>
+                    <h3 class="card-title" style="margin: 0;">{{ c.mission.demande.titre }}</h3>
+                    <p class="card-meta">
+                        Client : {{ c.mission.client.username }} ·
+                        <span class="tag emerald">💰 {{ c.montant }} FCFA</span>
+                    </p>
+                    <p class="card-meta">
+                        Statut : <span class="badge {{ c.statut }}">{{ c.get_statut_display }}</span>
+                        {% if c.en_retard %}
+                            <span class="badge litige" style="margin-left: 0.3rem;">En retard</span>
+                        {% endif %}
+                    </p>
+                    <p class="card-meta">
+                        À régler avant le {{ c.date_limite|date:'d/m/Y H:i' }}
+                        {% if c.date_declaration %} · Déclaré le {{ c.date_declaration|date:'d/m/Y' }}{% endif %}
+                        {% if c.date_paiement %} · Payé le {{ c.date_paiement|date:'d/m/Y' }}{% endif %}
+                    </p>
+                </div>
+                {% if c.statut == 'en_attente' %}
+                    <a class="btn btn-accent btn-sm" href="{% url 'propositions:regler_commission' c.pk %}">
+                        💰 Régler ma commission
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">
+        <div class="big">🎉</div>
+        <p>Aucune commission à régler pour l'instant.</p>
+    </div>
+{% endif %}
+{% endblock %}

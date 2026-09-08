@@ -6,7 +6,7 @@ Expose Proposition, Mission, Évaluation et Paiement dans le back-office.
 
 from django.contrib import admin
 
-from .models import Evaluation, Mission, Paiement, Proposition
+from .models import Commission, Evaluation, Mission, Paiement, Proposition
 
 
 @admin.register(Proposition)
@@ -37,3 +37,11 @@ class PaiementAdmin(admin.ModelAdmin):
     """Administration des paiements : liste, filtres par méthode et statut."""
     list_display = ('mission', 'montant', 'methode', 'statut', 'date_creation')
     list_filter = ('methode', 'statut')
+
+
+@admin.register(Commission)
+class CommissionAdmin(admin.ModelAdmin):
+    """Administration des commissions de la plateforme (10% du prix des missions)."""
+    list_display = ('mission', 'montant', 'statut', 'date_limite', 'date_declaration', 'date_paiement')
+    list_filter = ('statut',)
+    list_select_related = ('mission__demande',)

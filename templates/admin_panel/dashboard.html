@@ -21,6 +21,8 @@
     <div class="stat"><div class="stat-value">{{ missions_en_cours }}</div><div class="stat-label">Missions en cours</div></div>
     <div class="stat"><div class="stat-value" style="color: var(--success);">{{ missions_terminees }}</div><div class="stat-label">Missions terminées</div></div>
     <div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--accent);">{{ commissions_en_attente }}</div><div class="stat-label">Commissions dues</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--danger);">{{ commissions_en_retard }}</div><div class="stat-label">Commissions en retard</div></div>
 </div>
 
 {% if prestataires_a_verifier %}
@@ -49,6 +51,17 @@
     <p class="card-text">{{ missions_litiges }} mission(s) en litige à traiter.</p>
     <div class="actions">
         <a class="btn btn-danger" href="{% url 'admin_panel:litiges' %}">Traiter les litiges</a>
+    </div>
+</div>
+{% endif %}
+
+{% if commissions_en_retard %}
+<div class="card" style="border-color: var(--danger);">
+    <h3 class="card-title">💰 Commissions en retard</h3>
+    <p class="card-text">{{ commissions_en_retard }} commission(s) impayée(s) : les prestataires
+        concernés doivent être suspendus (traitement automatique chaque nuit).</p>
+    <div class="actions">
+        <a class="btn btn-danger" href="{% url 'admin_panel:commissions' %}">Gérer les commissions</a>
     </div>
 </div>
 {% endif %}

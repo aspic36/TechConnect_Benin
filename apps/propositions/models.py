@@ -3,7 +3,8 @@ Modèles de l'app propositions.
 
 Définit les entités métier liées au cycle de vie d'une mission :
 Proposition (offre d'un prestataire), Mission (travail lancé),
-Évaluation (note 1-5) et Paiement (accord direct MVP).
+Évaluation (note 1-5), Paiement (accord direct MVP) et Commission
+(part de la plateforme due par le prestataire à la clôture).
 """
 
 from django.conf import settings
@@ -114,3 +115,40 @@ class Paiement(models.Model):
     def __str__(self):
         """Représentation lisible : montant en FCFA et titre de la mission."""
         return f"Paiement {self.montant} FCFA — {self.mission.demande.titre}"
+
+
+class Commission(models.Model):
+    """Part de la plateforme (10 % du prix) due par le prestataire après une clôture.
+
+    Créée automatiquement quand une mission se termine : le prestataire dispose
+    d'un délai (COMMISSION_DELAI_JOURS) pour la régler. Passé ce délai, sa
+    sanction est la suspension puis le bannissement (géré par la commande
+    ``verifier_commissions``).
+    """
+
+    class Statut(models.TextChoices):
+        """État de la commission : en attente de règlement ou réglée."""
+        EN_ATTENTE = 'en_attente', 'En attente'
+        PAYEE = 'payee', 'Payée'
+
+    mission = models.OneToOneField(Mission, on_delete=models.CASCADE, related_name='commission')
+    montant = models.DecimalField(max_digits=12, decimal_places=0)
+    methode = models.CharField(max_length=20, choices=Paiement.Methode.choices, blank=True)
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    date_limite = models.DateTimeField(verbose_name='Date limite de règlement')
+    date_declaration = models.DateTimeField(null=True, blank=True, verbose_name='Date de déclaration de règlement')
+    date_paiement = models.DateTimeField(null=True, blank=True, verbose_name='Date de confirmation de paiement')
+
+    class Meta:
+        verbose_name = 'Commission'
+        ordering = ['date_limite']
+
+    def __str__(self):
+        """Représentation lisible : montant, statut et prestataire concerné."""
+        return f"Commission {self.montant} FCFA ({self.get_statut_display()}) — {self.mission.prestataire.username}"
+
+    @property
+    def en_retard(self):
+        """Indique si la commission est en attente ET passée à sa date limite."""
+        from django.utils import timezone
+        return self.statut == self.Statut.EN_ATTENTE and timezone.now() > self.date_limite
