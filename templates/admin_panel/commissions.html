@@ -26,7 +26,8 @@
                     </p>
                     <p class="card-meta">
                         À régler avant {{ c.date_limite|date:'d/m/Y H:i' }}
-                        {% if c.date_declaration %} · Déclaré {{ c.date_declaration|date:'d/m/Y' }} ({{ c.get_methode_display }}){% endif %}
+                        {% if c.date_declaration %} · Déclaré {{ c.date_declaration|date:'d/m/Y' }}
+                        ({% if c.methode %}{{ c.get_methode_display }}{% else %}méthode non précisée{% endif %}){% endif %}
                         {% if c.date_paiement %} · Payé {{ c.date_paiement|date:'d/m/Y' }}{% endif %}
                     </p>
                 </div>

@@ -240,6 +240,7 @@ class Command(BaseCommand):
         Commission.objects.create(
             mission=m7,
             montant=p7a.prix * 10 // 100,
+            methode='virement',
             date_limite=maintenant + timedelta(days=2),
         )
         self.stdout.write('Commission de démo créée.')
