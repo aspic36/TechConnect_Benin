@@ -1,3 +1,18 @@
+"""
+Commande de management : seed_demo.
+
+Peuple la base de données avec des donnees de demonstration realistes
+(cinq utilisateurs, sept categories, sept demandes a differents stades,
+propositions, missions, messages et evaluations) afin de pouvoir tester
+l'ensemble des fonctionnalites de TechConnect Benin sans saisie manuelle.
+
+Utilisation :
+    python3 manage.py seed_demo
+
+Attention : la commande supprime d'abord les comptes de démo existants
+puis recree l'ensemble des objets.
+"""
+
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
@@ -8,8 +23,10 @@ from apps.demandes.models import Categorie, Demande
 from apps.messagerie.models import Message
 from apps.propositions.models import Evaluation, Mission, Proposition
 
+# Mot de passe unique pour tous les comptes de demonstration
 MOT_DE_PASSE = 'Demo@2026!'
 
+# Categories de services proposées sur la plateforme
 CATEGORIES = [
     ('Développement web', 'developpement-web'),
     ('Développement mobile', 'developpement-mobile'),
@@ -20,22 +37,40 @@ CATEGORIES = [
     ('Design & Communication', 'design-communication'),
 ]
 
+# Logins des utilisateurs de démonstration
 UTILISATEURS_DEMO = [
     'amina', 'codjo', 'yves', 'farida', 'nassirou',
 ]
 
 
 class Command(BaseCommand):
+    """Commande de management Django : generation de donnees de demonstration."""
+
     help = 'Crée des données de démonstration (utilisateurs, demandes, propositions, missions…).'
 
     def handle(self, *args, **options):
+        """Point d'entree de la commande seed_demo.
+
+        La methode suit l'ordre logique du cycle metier :
+        1. Nettoyage des anciennes donnees de démo
+        2. Creation / obtain des categories
+        3. Creation des utilisateurs (2 clients, 3 prestataires)
+        4. Creation des demandes a differents statuts
+        5. Creation des propositions
+        6. Creation des missions (en cours + terminee)
+        7. Creation de messages de messagerie
+        8. Creation d'evaluations croisees
+        """
+        # --- 1. Nettoyage ---
         self.stdout.write('Nettoyage des données de démo existantes…')
         User.objects.filter(username__in=UTILISATEURS_DEMO).delete()
 
+        # --- 2. Categories (get_or_create pour idempotence) ---
         for nom, slug in CATEGORIES:
             Categorie.objects.get_or_create(nom=nom, slug=slug)
         self.stdout.write('Catégories prêtes.')
 
+        # --- 3. Utilisateurs de démo ---
         amina = User.objects.create_user(
             username='amina', password=MOT_DE_PASSE, role=User.Role.CLIENT,
             phone='97 10 22 33', ville='Cotonou',
@@ -63,12 +98,14 @@ class Command(BaseCommand):
         )
         self.stdout.write('Utilisateurs de démo créés.')
 
+        # --- 4. Recuperation des categories par slug ---
         web = Categorie.objects.get(slug='developpement-web')
         mobile = Categorie.objects.get(slug='developpement-mobile')
         securite = Categorie.objects.get(slug='securite')
         maintenance = Categorie.objects.get(slug='maintenance')
         automatisation = Categorie.objects.get(slug='automatisation')
 
+        # --- 5. Demandes a differents statuts du cycle de vie ---
         d1 = Demande.objects.create(
             client=amina, categorie=web,
             titre='Création d\'un site vitrine pour mon salon de coiffure',
@@ -120,6 +157,7 @@ class Command(BaseCommand):
         )
         self.stdout.write('Demandes de démo créées.')
 
+        # --- 6. Propositions soumises par les prestataires ---
         p1a = Proposition.objects.create(
             demande=d1, prestataire=yves, prix=135000, delais_jours=15,
             message='Je peux livrer un site vitrine moderne avec réservation en ligne dans les 2 semaines.',
@@ -144,6 +182,7 @@ class Command(BaseCommand):
             demande=d5, prestataire=yves, prix=80000, delais_jours=7,
             message='Je peux réaliser le modèle de facturation et l\'automatisation sous Excel (Power Query).',
         )
+        # Proposals acceptees : ces prestataires declenchent la creation de missions
         p6a = Proposition.objects.create(
             demande=d6, prestataire=yves, prix=450000, delais_jours=30,
             message='Application Android de gestion de stock avec alertes de rupture. Je suis disponible.',
@@ -156,6 +195,7 @@ class Command(BaseCommand):
         )
         self.stdout.write('Propositions de démo créées.')
 
+        # --- 7. Missions (une en cours, une terminee avec evaluee) ---
         maintenant = timezone.now()
         m6 = Mission.objects.create(
             demande=d6, proposition=p6a, client=amina, prestataire=yves,
@@ -168,6 +208,7 @@ class Command(BaseCommand):
         )
         self.stdout.write('Missions de démo créées.')
 
+        # --- 8. Messages de messagerie (fil de conversation) ---
         Message.objects.create(
             mission=m6, expediteur=amina, contenu='Bonjour Yves, quand peux-tu commencer ?',
         )
@@ -183,6 +224,7 @@ class Command(BaseCommand):
         )
         self.stdout.write('Messages de démo créés.')
 
+        # --- 9. Evaluations croisees (client <-> prestataire) ---
         Evaluation.objects.create(
             mission=m7, auteur=codjo, cible=farida, note=5,
             commentaire='Excellent travail, site livré en avance et très soigné. Je recommande !',
@@ -193,6 +235,7 @@ class Command(BaseCommand):
         )
         self.stdout.write('Évaluations de démo créées.')
 
+        # --- 10. Message de succes ---
         self.stdout.write(self.style.SUCCESS(
             'Données de démo prêtes ! Comptes (mot de passe "Demo@2026!") : '
             'amina (client), codjo (client), yves (prestataire), '

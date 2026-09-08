@@ -1,3 +1,11 @@
+"""
+Module d'URLs pour l'application accounts.
+
+Definit les routes associees aux vues d'authentification, de gestion
+de profil et de la page d'accueil.  Le namespace ``accounts`` est
+declare via ``app_name``.
+"""
+
 from django.urls import path
 
 from . import views

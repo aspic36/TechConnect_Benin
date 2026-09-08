@@ -1,3 +1,10 @@
+"""
+Routes URL du back-office (admin_panel).
+
+Mappe chaque URL aux vues de gestion du tableau de bord, des prestataires,
+de la modération des demandes et de la clôture des litiges.
+"""
+
 from django.urls import path
 
 from . import views

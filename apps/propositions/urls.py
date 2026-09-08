@@ -1,3 +1,9 @@
+"""
+Routes URL de l'app propositions.
+
+Mappe chaque URL aux vues gérant propositions, missions, évaluations et paiements.
+"""
+
 from django.urls import path
 
 from . import views

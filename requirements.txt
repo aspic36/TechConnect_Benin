@@ -1,3 +1,5 @@
+# Dépendances Python du projet TechConnect Bénin.
+# Installer avec : pip install -r requirements.txt
 Django==4.2.29
 PyMySQL
 python-dotenv

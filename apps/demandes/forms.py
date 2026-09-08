@@ -1,9 +1,13 @@
+"""Formulaire de création/édition d'une demande de service."""
+
 from django import forms
 
 from .models import Demande
 
 
 class DemandeForm(forms.ModelForm):
+    """Formulaire ModelForm pour les demandes, excluant client et statut (gérés automatiquement)."""
+
     class Meta:
         model = Demande
         fields = (
