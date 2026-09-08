@@ -17,6 +17,9 @@ media/*
 # Sauvegardes de base de données (données sensibles)
 backups/*
 
+# Identifiants locaux (jamais poussés sur GitHub)
+IDENTIFIANTS.md
+
 # Divers
 .DS_Store
 Thumbs.db
