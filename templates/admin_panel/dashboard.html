@@ -55,6 +55,17 @@
 </div>
 {% endif %}
 
+{% if commissions_a_confirmer %}
+<div class="card" style="border-color: #c7d2fe;">
+    <h3 class="card-title">✅ Commissions déclarées à confirmer</h3>
+    <p class="card-text">{{ commissions_a_confirmer }} prestataire(s) ont déclaré leur règlement
+        et attendent ta confirmation.</p>
+    <div class="actions">
+        <a class="btn btn-accent" href="{% url 'admin_panel:commissions' %}">Confirmer les règlements</a>
+    </div>
+</div>
+{% endif %}
+
 {% if commissions_en_retard %}
 <div class="card" style="border-color: var(--danger);">
     <h3 class="card-title">💰 Commissions en retard</h3>

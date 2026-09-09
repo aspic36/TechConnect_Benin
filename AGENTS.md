@@ -117,6 +117,12 @@ python3 manage.py shell
     - Sanctions automatiques (commande `verifier_commissions`, cron **04h10**) : commission en retard → **suspension** (champ `suspendu` + middleware bloquant tout sauf la page de règlement) ; suspension de 7 jours → **bannissement** (`is_active = False`).
     - Commandes manuelles admin : `suspendre` / `bannir` / `reactiver` un prestataire (page `prestataires/`).
     - Suite portée à **68 tests OK**.
+17. **Renforcement MVP (interface + anti-contournement)** :
+    - Cartes du tableau de bord admin **cliquables** (liens vers les pages back-office / admin Django).
+    - **Carte d'alerte « commissions déclarées à confirmer »** sur le dashboard + badge sur la page commissions.
+    - **Anti-contournement messagerie** (`apps/messagerie/utils.py`) : détection des n° béninois (`+229`, formats nationaux) → message bloqué (protection de la commission 10%).
+    - **Page CGU** (`/cgu/`) avec les règles (rôles, anti-contournement, commission, sanctions) + bannière de rappel dans la messagerie.
+    - Suite portée à **78 tests OK**.
 
 ## 🔲 RESTE À FAIRE (roadmap)
 

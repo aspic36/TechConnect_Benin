@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.propositions.models import Mission
 
 from .models import Message
+from .utils import detecter_numero_telephone
 
 
 @login_required
@@ -21,7 +22,16 @@ def fil_mission(request, pk):
     if request.method == 'POST':
         contenu = request.POST.get('contenu', '').strip()
         if contenu:
-            Message.objects.create(mission=mission, expediteur=request.user, contenu=contenu)
+            # Anti-contournement : on interdit l'échange de coordonnées directes
+            # pour protéger le suivi des missions (et la commission de la plateforme).
+            if detecter_numero_telephone(contenu):
+                messages.error(
+                    request,
+                    'Les coordonnées (téléphone, WhatsApp…) ne peuvent pas être échangées '
+                    'dans la messagerie : toute la mission doit se suivre sur la plateforme.',
+                )
+            else:
+                Message.objects.create(mission=mission, expediteur=request.user, contenu=contenu)
         return redirect('messagerie:fil', pk=mission.pk)
     fil = mission.messages.all()
     # Marquer comme lus les messages reçus par l'utilisateur connecté

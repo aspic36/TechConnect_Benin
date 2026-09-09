@@ -146,3 +146,13 @@ class CommissionSanctionsTests(TestCase):
         self.presta.refresh_from_db()
         self.assertTrue(self.presta.is_active)
         self.assertFalse(self.presta.suspendu)
+
+    def test_dashboard_compte_les_commissions_a_confirmer(self):
+        mission, commission = self._mission_terminee()
+        commission.date_limite = timezone.now() + timezone.timedelta(days=5)
+        commission.date_declaration = timezone.now()
+        commission.save()
+        self.client.login(username='staff', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:dashboard'))
+        self.assertEqual(reponse.context['commissions_a_confirmer'], 1)
+        self.assertEqual(reponse.context['commissions_en_retard'], 0)

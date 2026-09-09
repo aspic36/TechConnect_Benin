@@ -52,3 +52,37 @@ class MessagerieTests(TestCase):
         self.client.login(username='client', password='Passw0rd!')
         self.client.get(reverse('messagerie:fil', args=[self.mission.pk]))
         self.assertTrue(Message.objects.get().lu)
+
+    def test_bloque_un_numero_international(self):
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.post(reverse('messagerie:fil', args=[self.mission.pk]),
+                         {'contenu': 'Appelle-moi au +229 97 10 22 33 svp'})
+        self.assertEqual(Message.objects.count(), 0)
+
+    def test_bloque_un_numero_national(self):
+        self.client.login(username='presta', password='Passw0rd!')
+        self.client.post(reverse('messagerie:fil', args=[self.mission.pk]),
+                         {'contenu': 'Mon phone c 01 90 12 34 56'})
+        self.assertEqual(Message.objects.count(), 0)
+
+    def test_autorise_un_message_sans_coordonnees(self):
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.post(reverse('messagerie:fil', args=[self.mission.pk]),
+                         {'contenu': 'Le livrable sera prêt vendredi à Cotonou.'})
+        self.assertEqual(Message.objects.count(), 1)
+
+
+class DetectionNumeroTests(TestCase):
+
+    def test_detecte_les_formats_beninois(self):
+        from .utils import detecter_numero_telephone
+        self.assertTrue(detecter_numero_telephone('+22997102233'))
+        self.assertTrue(detecter_numero_telephone('+229 97 10 22 33'))
+        self.assertTrue(detecter_numero_telephone('97 10 22 33'))
+        self.assertTrue(detecter_numero_telephone('0190223344'))
+        self.assertTrue(detecter_numero_telephone('66 22 33 44'))
+
+    def test_ne_detecte_pas_un_simple_texte(self):
+        from .utils import detecter_numero_telephone
+        self.assertFalse(detecter_numero_telephone('Rendez-vous à 14h au marché Dantokpa.'))
+        self.assertFalse(detecter_numero_telephone(''))

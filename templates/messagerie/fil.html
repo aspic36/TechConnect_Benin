@@ -12,6 +12,13 @@
         <a class="btn btn-ghost btn-sm" href="{% url 'propositions:detail_mission' mission.pk %}">← Mission</a>
     </div>
 </div>
+<div class="card" style="border-color: #fde68a; padding: 0.7rem 1rem;">
+    <p class="card-meta" style="margin: 0;">
+        ⚠️ <strong>Règle de la plateforme</strong> : il est interdit d'échanger des coordonnées
+        (téléphone, WhatsApp, email) dans la messagerie. Toute la mission doit se suivre ici,
+        et le règlement de la commission (10%) s'effectue après la clôture.
+    </p>
+</div>
 <div class="chat-box">
     {% for msg in fil %}
         <div class="chat-msg {% if msg.expediteur == user %}me{% endif %}">

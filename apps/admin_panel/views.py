@@ -41,6 +41,9 @@ def dashboard(request):
         'commissions_en_retard': Commission.objects.filter(
             statut=Commission.Statut.EN_ATTENTE, date_limite__lt=timezone.now()
         ).count(),
+        'commissions_a_confirmer': Commission.objects.filter(
+            statut=Commission.Statut.EN_ATTENTE, date_declaration__isnull=False
+        ).count(),
     }
     return render(request, 'admin_panel/dashboard.html', contexte)
 
@@ -120,10 +123,15 @@ def liste_commissions(request):
     # Nombre de commission impayées pour le tableau de bord.
     en_attente = Commission.objects.filter(statut=Commission.Statut.EN_ATTENTE).count()
     en_retard = [c for c in commissions if c.en_retard]
+    # Commissions dont le prestataire a déjà déclaré le règlement (à confirmer).
+    a_confirmer = Commission.objects.filter(
+        statut=Commission.Statut.EN_ATTENTE, date_declaration__isnull=False
+    ).count()
     return render(request, 'admin_panel/commissions.html', {
         'commissions': commissions,
         'en_attente': en_attente,
         'en_retard': en_retard,
+        'a_confirmer': a_confirmer,
     })
 
 

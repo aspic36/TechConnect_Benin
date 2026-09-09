@@ -41,6 +41,11 @@ def accueil_selon_role(user):
     return 'demandes:mes_demandes'
 
 
+def cgu(request):
+    """Page statique « Conditions générales d'utilisation » de la plateforme."""
+    return render(request, 'accounts/cgu.html')
+
+
 def inscription(request):
     """Inscription d'un nouveau compte utilisateur.
 
