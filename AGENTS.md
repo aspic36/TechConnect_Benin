@@ -131,7 +131,7 @@ python3 manage.py shell
     - seed_demo : yves (Pro actif) + nassirou (demande Standard en attente). Suite portée à **91 tests OK**.
 19. **Renforcement UX & notifications** :
     - **Cartes d'abonnement cliquables** (sélection du plan par carte, radio cachée) ; quota **fixe par plan** (Gratuit = 3) ; recharge affichée **le 1er du mois** (`User.prochaine_recharge()`) ; formulaire masqué si Pro actif ; bandeau quota + recharge sur le catalogue.
-    - **Barre latérale gauche** pour toutes les pages connectées (par rôle, active link, responsive) ; header réduit (logo, rôle, 🔔, déconnexion).
+    - **Barre latérale verticale fixe** pour toutes les pages connectées (pleine hauteur, type Gemini : sidebar à gauche + contenu à droite ; par rôle, active link ; drawer latéral sur mobile via `sidebar-toggle`/`sidebar-scrim`, bouton ☰) ; header réduit (logo, rôle, 🔔, déconnexion).
     - **Système de notifications** (`Notification` accounts, helper `creer_notification`/`notifier_staff`, context processor `nb_notifications`) : cloche + compteur + page `/notifications/`. Déclencheurs : abonnement confirmé/refusé, commission confirmée (→ prestataire) ; proposition acceptée (→ prestataire) ; demande validée/supprimée (→ client) ; nouvelle demande d'abonnement, commission déclarée, prestataire à vérifier, demande à modérer (→ staff). seed_demo : notification pour nassirou.
     - **« Espèces » retiré** des moyens de paiement (abonnement ET paiement mission → Mobile Money / Virement uniquement).
     - Suite portée à **106 tests OK**.

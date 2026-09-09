@@ -9,24 +9,100 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
+{% if user.is_authenticated %}
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <a href="{% url 'accounts:accueil' %}">
+                <span class="brand-dot">⚡</span>
+                TechConnect <span class="brand-sub">Bénin</span>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="sidebar-title">Général</div>
+            {% if user.role == 'client' %}
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_demandes,detail_demande' %}active{% endif %}"
+                   href="{% url 'demandes:mes_demandes' %}">📋 Mes demandes</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'creation_demande' %}active{% endif %}"
+                   href="{% url 'demandes:creation_demande' %}">➕ Publier un besoin</a>
+            {% else %}
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'catalogue,detail_demande' %}active{% endif %}"
+                   href="{% url 'demandes:catalogue' %}">🔍 Catalogue</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_propositions,soumettre' %}active{% endif %}"
+                   href="{% url 'propositions:mes_propositions' %}">📤 Mes propositions</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_commissions,regler_commission' %}active{% endif %}"
+                   href="{% url 'propositions:mes_commissions' %}">💰 Commissions</a>
+            {% endif %}
+            <a class="sidebar-link {% if request.resolver_match.url_name in 'liste_missions,detail_mission' %}active{% endif %}"
+               href="{% url 'propositions:liste_missions' %}">🚀 Missions</a>
+
+            {% if user.role == 'prestataire' %}
+                <div class="sidebar-title">Abonnement</div>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'abonnement' %}active{% endif %}"
+                   href="{% url 'accounts:abonnement' %}">⭐ Mon abonnement</a>
+            {% endif %}
+
+            {% if user.is_staff %}
+                <div class="sidebar-title">Back-office</div>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                   href="{% url 'admin_panel:dashboard' %}">📊 Tableau de bord</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'prestataires,verifier' %}active{% endif %}"
+                   href="{% url 'admin_panel:prestataires' %}">👥 Prestataires</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'demandes,valider_demande,refuser_demande' %}active{% endif %}"
+                   href="{% url 'admin_panel:demandes' %}">🗂 Demandes à modérer</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'litiges,clore_litige' %}active{% endif %}"
+                   href="{% url 'admin_panel:litiges' %}">⚖️ Litiges</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'commissions,confirmer_commission,prolonger_commission' %}active{% endif %}"
+                   href="{% url 'admin_panel:commissions' %}">💳 Commissions</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'abonnements,confirmer_abonnement,refuser_abonnement' %}active{% endif %}"
+                   href="{% url 'admin_panel:abonnements' %}">⭐ Abonnements</a>
+            {% endif %}
+
+            <div class="sidebar-title">Compte</div>
+            <a class="sidebar-link {% if request.resolver_match.url_name in 'notifications,marquer_lues' %}active{% endif %}"
+               href="{% url 'accounts:notifications' %}">🔔 Notifications
+                {% if nb_notifications %}<span class="badge litige">{{ nb_notifications }}</span>{% endif %}
+            </a>
+            <a class="sidebar-link {% if request.resolver_match.url_name in 'profil,modifier_profil' %}active{% endif %}"
+               href="{% url 'accounts:profil' %}">👤 Profil</a>
+        </nav>
+
+        <div class="sidebar-actions">
+            <a class="btn btn-outline btn-sm" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
+        </div>
+    </aside>
+
+    <div class="app-main-wrap">
+        <header class="app-topbar">
+            <button class="sidebar-toggle" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+            <a class="app-title" href="{% url 'accounts:accueil' %}">⚡ TechConnect Bénin</a>
+            <span class="app-topbar-spacer"></span>
+            <span class="nav-role">{{ user.get_role_display }}</span>
+            <a class="notif-bell" href="{% url 'accounts:notifications' %}" title="Notifications">🔔
+                {% if nb_notifications %}<span class="notif-count">{{ nb_notifications }}</span>{% endif %}
+            </a>
+            <a class="btn btn-outline btn-sm sidebar-logout-mobile" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
+        </header>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message message-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <main class="app-main">
+{% else %}
     <header class="navbar">
         <a class="navbar-brand" href="{% url 'accounts:accueil' %}">
             <span class="brand-dot">⚡</span>
-            TechConnect
-            {% if not user.is_authenticated %}<span class="brand-sub">Bénin</span>{% endif %}
+            TechConnect <span class="brand-sub">Bénin</span>
         </a>
         <nav class="navbar-links">
-            {% if user.is_authenticated %}
-                <span class="nav-role">{{ user.get_role_display }}</span>
-                <a class="notif-bell" href="{% url 'accounts:notifications' %}" title="Notifications">🔔
-                    {% if nb_notifications %}<span class="notif-count">{{ nb_notifications }}</span>{% endif %}
-                </a>
-                <a class="btn btn-outline btn-sm" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
-            {% else %}
-                <a class="nav-link" href="{% url 'accounts:accueil' %}">Accueil</a>
-                <a class="nav-link" href="{% url 'accounts:connexion' %}">Connexion</a>
-                <a class="btn btn-sm" href="{% url 'accounts:inscription' %}">S'inscrire</a>
-            {% endif %}
+            <a class="nav-link" href="{% url 'accounts:accueil' %}">Accueil</a>
+            <a class="nav-link" href="{% url 'accounts:connexion' %}">Connexion</a>
+            <a class="btn btn-sm" href="{% url 'accounts:inscription' %}">S'inscrire</a>
         </nav>
     </header>
 
@@ -38,74 +114,45 @@
         </div>
     {% endif %}
 
-    {% if user.is_authenticated %}
-        <div class="app-layout">
-            <aside class="sidebar">
-                <nav>
-                    <div class="sidebar-title">Général</div>
-                    {% if user.role == 'client' %}
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_demandes,detail_demande' %}active{% endif %}"
-                           href="{% url 'demandes:mes_demandes' %}">📋 Mes demandes</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name == 'creation_demande' %}active{% endif %}"
-                           href="{% url 'demandes:creation_demande' %}">➕ Publier un besoin</a>
-                    {% else %}
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'catalogue,detail_demande' %}active{% endif %}"
-                           href="{% url 'demandes:catalogue' %}">🔍 Catalogue</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_propositions,soumettre' %}active{% endif %}"
-                           href="{% url 'propositions:mes_propositions' %}">📤 Mes propositions</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_commissions,regler_commission' %}active{% endif %}"
-                           href="{% url 'propositions:mes_commissions' %}">💰 Commissions</a>
-                    {% endif %}
-                    <a class="sidebar-link {% if request.resolver_match.url_name in 'liste_missions,detail_mission' %}active{% endif %}"
-                       href="{% url 'propositions:liste_missions' %}">🚀 Missions</a>
-
-                    {% if user.role == 'prestataire' %}
-                        <div class="sidebar-title">Abonnement</div>
-                        <a class="sidebar-link {% if request.resolver_match.url_name == 'abonnement' %}active{% endif %}"
-                           href="{% url 'accounts:abonnement' %}">⭐ Mon abonnement</a>
-                    {% endif %}
-
-                    {% if user.is_staff %}
-                        <div class="sidebar-title">Back-office</div>
-                        <a class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                           href="{% url 'admin_panel:dashboard' %}">📊 Tableau de bord</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'prestataires,verifier' %}active{% endif %}"
-                           href="{% url 'admin_panel:prestataires' %}">👥 Prestataires</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'demandes,valider_demande,refuser_demande' %}active{% endif %}"
-                           href="{% url 'admin_panel:demandes' %}">🗂 Demandes à modérer</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'litiges,clore_litige' %}active{% endif %}"
-                           href="{% url 'admin_panel:litiges' %}">⚖️ Litiges</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'commissions,confirmer_commission,prolonger_commission' %}active{% endif %}"
-                           href="{% url 'admin_panel:commissions' %}">💳 Commissions</a>
-                        <a class="sidebar-link {% if request.resolver_match.url_name in 'abonnements,confirmer_abonnement,refuser_abonnement' %}active{% endif %}"
-                           href="{% url 'admin_panel:abonnements' %}">⭐ Abonnements</a>
-                    {% endif %}
-
-                    <div class="sidebar-title">Compte</div>
-                    <a class="sidebar-link {% if request.resolver_match.url_name in 'notifications,marquer_lues' %}active{% endif %}"
-                       href="{% url 'accounts:notifications' %}">🔔 Notifications
-                        {% if nb_notifications %}<span class="badge litige">{{ nb_notifications }}</span>{% endif %}
-                    </a>
-                    <a class="sidebar-link {% if request.resolver_match.url_name in 'profil,modifier_profil' %}active{% endif %}"
-                       href="{% url 'accounts:profil' %}">👤 Profil</a>
-                </nav>
-                <a class="btn btn-outline btn-sm sidebar-logout" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
-            </aside>
-            <main class="app-main">
-    {% else %}
-        <main class="container">
-    {% endif %}
-        {% block content %}{% endblock %}
-    {% if user.is_authenticated %}
-            </main>
-        </div>
-    {% else %}
+    <main class="container">
+{% endif %}
+            {% block content %}{% endblock %}
+{% if user.is_authenticated %}
         </main>
-    {% endif %}
+
+        <footer class="footer">
+            <p>© 2026 TechConnect Bénin — La mise en relation des services informatiques au Bénin</p>
+            <p><a href="{% url 'accounts:cgu' %}" style="color: inherit; opacity: 0.8;">CGU</a></p>
+        </footer>
+    </div>
+
+    <div class="sidebar-scrim" aria-hidden="true"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var sidebar = document.querySelector('.sidebar');
+            var toggler = document.querySelector('.sidebar-toggle');
+            var scrim = document.querySelector('.sidebar-scrim');
+            if (!sidebar || !toggler) { return; }
+            function setOpen(open) {
+                sidebar.classList.toggle('open', open);
+                toggler.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (scrim) { scrim.classList.toggle('visible', open); }
+            }
+            toggler.addEventListener('click', function (e) {
+                e.preventDefault();
+                setOpen(!sidebar.classList.contains('open'));
+            });
+            if (scrim) { scrim.addEventListener('click', function () { setOpen(false); }); }
+        });
+    </script>
+{% else %}
+    </main>
 
     <footer class="footer">
         <p>© 2026 TechConnect Bénin — La mise en relation des services informatiques au Bénin</p>
         <p><a href="{% url 'accounts:cgu' %}" style="color: inherit; opacity: 0.8;">CGU</a></p>
     </footer>
+{% endif %}
 </body>
 </html>
