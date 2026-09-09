@@ -23,3 +23,5 @@ IDENTIFIANTS.md
 # Divers
 .DS_Store
 Thumbs.db
+# Artefacts éditeurs/temp
+.aider.chat.history.md
