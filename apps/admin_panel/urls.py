@@ -26,4 +26,7 @@ urlpatterns = [
     path('prestataires/<int:pk>/suspendre/', views.suspendre_prestataire, name='suspendre'),
     path('prestataires/<int:pk>/bannir/', views.bannir_prestataire, name='bannir'),
     path('prestataires/<int:pk>/reactiver/', views.reactiver_prestataire, name='reactiver'),
+    path('abonnements/', views.liste_abonnements, name='abonnements'),
+    path('abonnements/<int:pk>/confirmer/', views.confirmer_abonnement, name='confirmer_abonnement'),
+    path('abonnements/<int:pk>/refuser/', views.refuser_abonnement, name='refuser_abonnement'),
 ]

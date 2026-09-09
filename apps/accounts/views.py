@@ -7,12 +7,14 @@ edition du profil.  Chaque vue redirige automatiquement vers l'espace
 approprie selon le role de l'utilisateur (client ou prestataire).
 """
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import ConnexionForm, InscriptionForm, ProfilForm
+from .forms import ConnexionForm, DemandeAbonnementForm, InscriptionForm, ProfilForm
+from .models import Abonnement, User
 from .security import enregistrer_echec, reinitialiser_echecs, tentative_autorisee
 
 
@@ -130,3 +132,47 @@ def modifier_profil(request):
     else:
         form = ProfilForm(instance=request.user)
     return render(request, 'accounts/modifier_profil.html', {'form': form})
+
+
+@login_required
+def abonnement(request):
+    """Page d'abonnement du prestataire : plan en cours, quota et demande d'upgrade.
+
+    Le prestataire choisit un plan payant (Standard/Pro) et un moyen de paiement :
+    la demande est créée en « en attente », confirmée ensuite par un admin (back-office).
+    """
+    if request.user.role != User.Role.PRESTATAIRE:
+        messages.error(request, 'Seul un prestataire peut souscrire un abonnement.')
+        return redirect('demandes:mes_demandes')
+    autorise, utilisees, quota = request.user.peut_proposer()
+    en_attente = request.user.abonnements.filter(
+        statut=Abonnement.Statut.EN_ATTENTE
+    ).first()
+    if request.method == 'POST':
+        form = DemandeAbonnementForm(request.POST)
+        if en_attente:
+            messages.warning(request, 'Une demande d’abonnement est déjà en attente de confirmation.')
+            return redirect('accounts:abonnement')
+        if form.is_valid():
+            demande = form.save(commit=False)
+            demande.prestataire = request.user
+            demande.montant = {
+                User.Plan.STANDARD: settings.PLAN_STANDARD_PRIX,
+                User.Plan.PRO: settings.PLAN_PRO_PRIX,
+            }[demande.plan]
+            demande.save()
+            messages.info(
+                request,
+                f'Demande d’abonnement {demande.get_plan_display()} ({demande.montant} FCFA) '
+                'enregistrée. Un administrateur va la confirmer.',
+            )
+            return redirect('accounts:abonnement')
+    else:
+        form = DemandeAbonnementForm()
+    return render(request, 'accounts/abonnement.html', {
+        'form': form,
+        'autorise': autorise,
+        'utilisees': utilisees,
+        'quota': quota,
+        'en_attente': en_attente,
+    })

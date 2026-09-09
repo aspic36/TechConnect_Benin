@@ -100,9 +100,9 @@ Après avoir lancé `seed_demo`, connecte-toi avec le mot de passe **`Demo@2026!
 |---|---|---|
 | `amina` | Client | Salon de coiffure (Cotonou) |
 | `codjo` | Client | Association (Porto-Novo) |
-| `yves` | Prestataire | Développeur web/mobile · vérifié |
+| `yves` | Prestataire | Développeur web/mobile · vérifié · **plan Pro** |
 | `farida` | Prestataire | Webdesigner · vérifiée |
-| `nassirou` | Prestataire | Ingénieur réseaux · **à vérifier** (vois le back-office) |
+| `nassirou` | Prestataire | Ingénieur réseaux · **abonnement Standard à confirmer** (vois le back-office) |
 
 Le compte admin (`createsuperuser`) donne accès à `/admin/` et `/back-office/`.
 
@@ -148,6 +148,7 @@ python3 manage.py shell              # console interactive
 - [x] Sécurité : anti brute-force connexion, validation des avatars
 - [x] Sauvegardes MySQL automatiques (cron, rotation 14 jours)
 - [x] Monétisation : commission 10% + sanctions (suspension → bannissement)
+- [x] Monétisation : abonnements prestataires (Gratuit 3 propositions/mois, Standard 15, Pro illimité)
 - [ ] Déploiement production (Linux + Nginx + HTTPS)
 - [ ] API REST + application mobile (Flutter)
 

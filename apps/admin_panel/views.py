@@ -14,7 +14,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import Abonnement, User
 from apps.demandes.models import Demande
 from apps.propositions.models import Commission, Mission
 
@@ -44,6 +44,9 @@ def dashboard(request):
         'commissions_a_confirmer': Commission.objects.filter(
             statut=Commission.Statut.EN_ATTENTE, date_declaration__isnull=False
         ).count(),
+        'abonnements_a_confirmer': Abonnement.objects.filter(
+            statut=Abonnement.Statut.EN_ATTENTE
+        ).count(),
     }
     return render(request, 'admin_panel/dashboard.html', contexte)
 
@@ -52,7 +55,10 @@ def dashboard(request):
 def liste_prestataires(request):
     """Liste tous les prestataires inscrits, des plus récents aux plus anciens."""
     prestataires = User.objects.filter(role=User.Role.PRESTATAIRE).order_by('-date_joined')
-    return render(request, 'admin_panel/prestataires.html', {'prestataires': prestataires})
+    return render(request, 'admin_panel/prestataires.html', {
+        'prestataires': prestataires,
+        'now': timezone.now(),
+    })
 
 
 @staff_member_required
@@ -199,3 +205,51 @@ def reactiver_prestataire(request, pk):
     prestataire.save()
     messages.success(request, f'{prestataire.username} est réactivé.')
     return redirect('admin_panel:prestataires')
+
+
+@staff_member_required
+def liste_abonnements(request):
+    """Liste les demandes d'abonnement des prestataires, les en attente d'abord."""
+    abonnements = Abonnement.objects.select_related('prestataire').order_by('statut', '-date_demande')
+    a_attente = Abonnement.objects.filter(statut=Abonnement.Statut.EN_ATTENTE).count()
+    return render(request, 'admin_panel/abonnements.html', {
+        'abonnements': abonnements,
+        'en_attente': a_attente,
+    })
+
+
+@staff_member_required
+def confirmer_abonnement(request, pk):
+    """Confirme une demande d'abonnement et active la période sur le compte."""
+    abonnement = get_object_or_404(Abonnement, pk=pk)
+    if abonnement.statut == Abonnement.Statut.EN_ATTENTE:
+        maintenant = timezone.now()
+        abonnement.statut = Abonnement.Statut.ACTIF
+        abonnement.date_confirmation = maintenant
+        abonnement.date_fin = maintenant + timedelta(days=settings.ABONNEMENT_DUREE_JOURS)
+        abonnement.save()
+        # Active le plan sur le compte du prestataire pour la durée payée.
+        prestataire = abonnement.prestataire
+        prestataire.plan = abonnement.plan
+        prestataire.date_debut_plan = maintenant
+        prestataire.date_fin_plan = abonnement.date_fin
+        prestataire.save()
+        messages.success(
+            request,
+            f'Abonnement {abonnement.get_plan_display()} activé pour '
+            f'{prestataire.username} ({abonnement.montant} FCFA).',
+        )
+    else:
+        messages.info(request, 'Cette demande a déjà été traitée.')
+    return redirect('admin_panel:abonnements')
+
+
+@staff_member_required
+def refuser_abonnement(request, pk):
+    """Refuse une demande d'abonnement (le compte reste sur le plan courant)."""
+    abonnement = get_object_or_404(Abonnement, pk=pk)
+    if abonnement.statut == Abonnement.Statut.EN_ATTENTE:
+        abonnement.statut = Abonnement.Statut.REFUSE
+        abonnement.save()
+        messages.warning(request, f'Demande {abonnement.get_plan_display()} refusée.')
+    return redirect('admin_panel:abonnements')

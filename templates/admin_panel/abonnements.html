@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Abonnements — Back-office{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">Abonnements prestataires</h2>
+        {% if en_attente %}<span class="badge en_attente">{{ en_attente }} à confirmer</span>{% endif %}
+    </div>
+    <p>Demandes de plans payants (Standard / Pro) à activer ou à refuser.</p>
+</div>
+
+{% if abonnements %}
+    {% for a in abonnements %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                <div>
+                    <h3 class="card-title" style="margin: 0;">{{ a.prestataire.username }}</h3>
+                    <p class="card-meta">
+                        <span class="tag emerald">⭐ {{ a.get_plan_display }} · {{ a.montant }} FCFA</span>
+                        · Statut : <span class="badge {{ a.statut }}">{{ a.get_statut_display }}</span>
+                        {% if a.statut == 'en_attente' %} · Déclaré {{ a.get_methode_display }}{% endif %}
+                    </p>
+                    <p class="card-meta">
+                        Demandé le {{ a.date_demande|date:'d/m/Y' }}
+                        {% if a.date_fin %} · Actif jusqu'au {{ a.date_fin|date:'d/m/Y' }}{% endif %}
+                    </p>
+                </div>
+                {% if a.statut == 'en_attente' %}
+                    <div class="actions">
+                        <a class="btn btn-success btn-sm" href="{% url 'admin_panel:confirmer_abonnement' a.pk %}">✓ Confirmer</a>
+                        <a class="btn btn-ghost btn-sm" href="{% url 'admin_panel:refuser_abonnement' a.pk %}">✕ Refuser</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">
+        <div class="big">⭐</div>
+        <p>Aucune demande d'abonnement.</p>
+    </div>
+{% endif %}
+{% endblock %}

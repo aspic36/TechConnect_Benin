@@ -123,6 +123,12 @@ python3 manage.py shell
     - **Anti-contournement messagerie** (`apps/messagerie/utils.py`) : détection des n° béninois (`+229`, formats nationaux) → message bloqué (protection de la commission 10%).
     - **Page CGU** (`/cgu/`) avec les règles (rôles, anti-contournement, commission, sanctions) + bannière de rappel dans la messagerie.
     - Suite portée à **78 tests OK**.
+18. **Monétisation — abonnements prestataires (freemium)** :
+    - Plans : **Gratuit** (0 FCFA, 3 propositions/mois), **Standard** (2 000 FCFA, 15/mois), **Pro** (5 000 FCFA, illimité) — constantes `PLAN_*` + `ABONNEMENT_DUREE_JOURS=30`.
+    - Modèle `Abonnement` (accounts) avec statuts `en_attente`/`actif`/`refuse` (migration `0005`) : le prestataire demande un plan + déclare son paiement (`/abonnement/`), l'**admin confirme** dans le back-office (`abonnements/`).
+    - Activation : `User.plan` + `date_debut_plan` + `date_fin_plan` (période 30 j) ; `plan_effectif()` retombe sur Gratuit si la période est expirée ; quota mensuel via `propositions_du_mois()`.
+    - **Blocage du quota** dans `soumettre_proposition` (3/mois en Gratuit) avec redirection vers la page abonnement ; badges plan sur profil/prestataires ; carte alerte « Abonnements à confirmer » sur le dashboard ; CGU §5 bis.
+    - seed_demo : yves (Pro actif) + nassirou (demande Standard en attente). Suite portée à **91 tests OK**.
 
 ## 🔲 RESTE À FAIRE (roadmap)
 

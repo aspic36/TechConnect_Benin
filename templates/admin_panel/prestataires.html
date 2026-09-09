@@ -26,6 +26,11 @@
                             {% else %}
                                 <span class="badge en_attente">À vérifier</span>
                             {% endif %}
+                            {% if p.plan == 'pro' and p.date_fin_plan and p.date_fin_plan >= now %}
+                                <span class="badge acceptee" style="margin-left: 0.3rem;">⭐ Pro</span>
+                            {% elif p.plan == 'standard' and p.date_fin_plan and p.date_fin_plan >= now %}
+                                <span class="badge en_attente" style="margin-left: 0.3rem;">📈 Standard</span>
+                            {% endif %}
                             {% if not p.is_active %}
                                 <span class="badge litige" style="margin-left: 0.3rem;">Banni</span>
                             {% elif p.suspendu %}

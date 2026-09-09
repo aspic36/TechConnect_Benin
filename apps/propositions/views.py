@@ -32,6 +32,15 @@ def soumettre_proposition(request, pk):
     if demande.statut not in (Demande.Statut.EN_COURS, Demande.Statut.EN_ATTENTE):
         messages.warning(request, 'Cette demande ne reçoit plus de propositions.')
         return redirect('demandes:detail_demande', pk=demande.pk)
+    # Quota mensuel de propositions selon le plan d'abonnement du prestataire.
+    autorise, utilisees, quota = request.user.peut_proposer()
+    if not autorise:
+        messages.error(
+            request,
+            f'Quota de {quota} propositions/mois atteint. '
+            'Passe à un plan supérieur pour continuer à proposer.',
+        )
+        return redirect('accounts:abonnement')
     if request.method == 'POST':
         form = PropositionForm(request.POST)
         if form.is_valid():

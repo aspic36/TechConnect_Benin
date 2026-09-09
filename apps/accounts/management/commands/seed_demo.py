@@ -18,7 +18,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import Abonnement, User
 from apps.demandes.models import Categorie, Demande
 from apps.messagerie.models import Message
 from apps.propositions.models import Commission, Evaluation, Mission, Proposition
@@ -71,6 +71,7 @@ class Command(BaseCommand):
         self.stdout.write('Catégories prêtes.')
 
         # --- 3. Utilisateurs de démo ---
+        maintenant = timezone.now()
         amina = User.objects.create_user(
             username='amina', password=MOT_DE_PASSE, role=User.Role.CLIENT,
             phone='97 10 22 33', ville='Cotonou',
@@ -85,6 +86,8 @@ class Command(BaseCommand):
             username='yves', password=MOT_DE_PASSE, role=User.Role.PRESTATAIRE,
             phone='91 88 99 00', ville='Abomey-Calavi', company_name='Yves Tech Services',
             bio='Développeur web et mobile, 6 ans d\'expérience.', is_verified=True,
+            plan=User.Plan.PRO, date_debut_plan=maintenant - timedelta(days=5),
+            date_fin_plan=maintenant + timedelta(days=25),
         )
         farida = User.objects.create_user(
             username='farida', password=MOT_DE_PASSE, role=User.Role.PRESTATAIRE,
@@ -95,6 +98,12 @@ class Command(BaseCommand):
             username='nassirou', password=MOT_DE_PASSE, role=User.Role.PRESTATAIRE,
             phone='94 56 78 90', ville='Parakou', company_name='Nassirou Réseaux',
             bio='Ingénieur réseaux et télécoms.',
+        )
+        # nassirou a demandé un plan Standard (demande laissée en attente pour le back-office).
+        Abonnement.objects.create(
+            prestataire=nassirou, plan=User.Plan.STANDARD, montant=2000,
+            methode=Abonnement.Methode.MOBILE_MONEY,
+            date_demande=maintenant - timedelta(days=1),
         )
         self.stdout.write('Utilisateurs de démo créés.')
 
@@ -248,6 +257,6 @@ class Command(BaseCommand):
         # --- 11. Message de succes ---
         self.stdout.write(self.style.SUCCESS(
             'Données de démo prêtes ! Comptes (mot de passe "Demo@2026!") : '
-            'amina (client), codjo (client), yves (prestataire), '
-            'farida (prestataire), nassirou (prestataire, à vérifier).'
+            'amina (client), codjo (client), yves (prestataire, plan Pro), '
+            'farida (prestataire), nassirou (prestataire, abonnement Standard en attente).'
         ))

@@ -76,6 +76,54 @@ class SoumissionTests(BaseTests):
         self.assertFalse(Proposition.objects.exists())
 
 
+class QuotaPropositionTests(BaseTests):
+    """Le plan Gratuit limite à 3 propositions/mois ; les plans payants lèvent la limite."""
+
+    def _soumettre(self):
+        return self.client.post(
+            reverse('propositions:soumettre', args=[self.demande.pk]),
+            {'prix': 100000, 'delais_jours': 10},
+        )
+
+    def test_quota_gratuit_bloque_la_quatrieme(self):
+        self.client.login(username='presta', password='Passw0rd!')
+        for _ in range(3):
+            self._soumettre()
+        self.assertEqual(Proposition.objects.count(), 3)
+        reponse = self._soumettre()
+        self.assertRedirects(reponse, reverse('accounts:abonnement'))
+        self.assertEqual(Proposition.objects.count(), 3)
+
+    def test_plan_standard_autorise_au_dela_de_trois(self):
+        self.presta.plan = User.Plan.STANDARD
+        self.presta.date_debut_plan = timezone.now() - timezone.timedelta(days=1)
+        self.presta.date_fin_plan = timezone.now() + timezone.timedelta(days=29)
+        self.presta.save()
+        self.client.login(username='presta', password='Passw0rd!')
+        for _ in range(4):
+            self._soumettre()
+        self.assertEqual(Proposition.objects.count(), 4)
+
+    def test_plan_pro_illimite(self):
+        self.presta.plan = User.Plan.PRO
+        self.presta.date_fin_plan = timezone.now() + timezone.timedelta(days=20)
+        self.presta.save()
+        self.client.login(username='presta', password='Passw0rd!')
+        for _ in range(5):
+            self._soumettre()
+        self.assertEqual(Proposition.objects.count(), 5)
+
+    def test_plan_expire_bloque_a_trois(self):
+        self.presta.plan = User.Plan.STANDARD
+        self.presta.date_fin_plan = timezone.now() - timezone.timedelta(days=1)
+        self.presta.save()
+        self.client.login(username='presta', password='Passw0rd!')
+        for _ in range(3):
+            self._soumettre()
+        self._soumettre()
+        self.assertEqual(Proposition.objects.count(), 3)
+
+
 class ListeTests(BaseTests):
 
     def test_mes_propositions_filtre_par_prestataire(self):

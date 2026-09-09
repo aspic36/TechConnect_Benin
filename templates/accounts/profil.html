@@ -28,6 +28,11 @@
                 {% else %}
                     <span class="badge en_attente">En attente de vérification</span>
                 {% endif %}
+                {% if user.role == 'prestataire' %}
+                    <span class="badge {% if user.plan_effectif == 'pro' %}acceptee{% elif user.plan_effectif == 'standard' %}en_attente{% else %}litige{% endif %}">
+                        {{ user.get_plan_display }}{% if user.plan_effectif == 'pro' %} ⭐{% endif %}
+                    </span>
+                {% endif %}
             </p>
         </div>
     </div>

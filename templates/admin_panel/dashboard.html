@@ -23,6 +23,7 @@
     <a class="stat-link" href="{% url 'admin_panel:litiges' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ commissions_en_attente }}</div><div class="stat-label">Commissions dues</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ commissions_en_retard }}</div><div class="stat-label">Commissions en retard</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:abonnements' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ abonnements_a_confirmer }}</div><div class="stat-label">Abonnements à confirmer</div></div></a>
 </div>
 
 {% if prestataires_a_verifier %}
@@ -62,6 +63,17 @@
         et attendent ta confirmation.</p>
     <div class="actions">
         <a class="btn btn-accent" href="{% url 'admin_panel:commissions' %}">Confirmer les règlements</a>
+    </div>
+</div>
+{% endif %}
+
+{% if abonnements_a_confirmer %}
+<div class="card" style="border-color: #c7d2fe;">
+    <h3 class="card-title">⭐ Abonnements à confirmer</h3>
+    <p class="card-text">{{ abonnements_a_confirmer }} demande(s) d'abonnement prestataire
+        attendent une décision.</p>
+    <div class="actions">
+        <a class="btn btn-accent" href="{% url 'admin_panel:abonnements' %}">Gérer les abonnements</a>
     </div>
 </div>
 {% endif %}

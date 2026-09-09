@@ -1,9 +1,10 @@
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .forms import InscriptionForm
-from .models import User
+from .models import Abonnement, User
 
 
 class InscriptionTests(TestCase):
@@ -178,3 +179,76 @@ class ProtectionBruteForceTests(TestCase):
             'username': 'victime', 'password': 'Passw0rd!',
         })
         self.assertEqual(reponse.status_code, 302)
+
+
+class AbonnementTests(TestCase):
+
+    def setUp(self):
+        self.prestataire = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+        self.client_ = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+
+    def _post_demande(self, plan='standard', methode='mobile_money'):
+        return self.client.post(reverse('accounts:abonnement'), {
+            'plan': plan, 'methode': methode,
+        })
+
+    def test_page_abonnement_reservee_prestataire(self):
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:abonnement'))
+        self.assertRedirects(reponse, reverse('demandes:mes_demandes'))
+
+    def test_page_abonnement_accessible_prestataire(self):
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:abonnement'))
+        self.assertEqual(reponse.status_code, 200)
+
+    def test_demander_abonnement_cree_demande_en_attente(self):
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self._post_demande()
+        self.assertEqual(reponse.status_code, 302)
+        demande = Abonnement.objects.get(prestataire=self.prestataire)
+        self.assertEqual(demande.statut, Abonnement.Statut.EN_ATTENTE)
+        self.assertEqual(demande.montant, 2000)
+        self.assertEqual(demande.plan, User.Plan.STANDARD)
+
+    def test_une_seule_demande_en_attente_possible(self):
+        self.client.login(username='presta', password='Passw0rd!')
+        self._post_demande()
+        self._post_demande(plan='pro')
+        self.assertEqual(Abonnement.objects.filter(prestataire=self.prestataire).count(), 1)
+
+    def test_plan_pro_quota_illimite(self):
+        self.prestataire.plan = User.Plan.PRO
+        self.prestataire.date_debut_plan = timezone.now()
+        self.prestataire.date_fin_plan = timezone.now() + timezone.timedelta(days=30)
+        self.prestataire.save()
+        self.assertEqual(self.prestataire.plan_effectif(), User.Plan.PRO)
+        self.assertIsNone(self.prestataire.quota_mensuel())
+        autorise, _, quota = self.prestataire.peut_proposer()
+        self.assertTrue(autorise)
+        self.assertIsNone(quota)
+
+    def test_plan_expire_retombe_sur_gratuit(self):
+        self.prestataire.plan = User.Plan.PRO
+        self.prestataire.date_debut_plan = timezone.now() - timezone.timedelta(days=40)
+        self.prestataire.date_fin_plan = timezone.now() - timezone.timedelta(days=10)
+        self.prestataire.save()
+        self.assertEqual(self.prestataire.plan_effectif(), User.Plan.GRATUIT)
+        self.assertEqual(self.prestataire.quota_mensuel(), 3)
+
+    def test_plan_standard_quota_quinze(self):
+        self.prestataire.plan = User.Plan.STANDARD
+        self.prestataire.date_fin_plan = timezone.now() + timezone.timedelta(days=10)
+        self.prestataire.save()
+        self.assertEqual(self.prestataire.quota_mensuel(), 15)
+
+    def test_demande_en_attente_visible_sur_page(self):
+        Abonnement.objects.create(
+            prestataire=self.prestataire, plan=User.Plan.PRO, montant=5000,
+            methode=Abonnement.Methode.VIREMENT)
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:abonnement'))
+        self.assertContains(reponse, 'en attente')
+        self.assertNotContains(reponse, 'Changer de plan')

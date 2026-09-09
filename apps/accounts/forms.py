@@ -10,7 +10,7 @@ au modele ``User`` de TechConnect Benin.
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
-from .models import User
+from .models import Abonnement, User
 
 
 class InscriptionForm(UserCreationForm):
@@ -59,3 +59,27 @@ class ProfilForm(forms.ModelForm):
 class ConnexionForm(AuthenticationForm):
     """Formulaire de connexion avec libelle personnalise pour le champ login."""
     username = forms.CharField(label="Nom d'utilisateur")
+
+
+class DemandeAbonnementForm(forms.ModelForm):
+    """Formulaire de demande d'abonnement payant (Standard ou Pro).
+
+    Le montant est calculé automatiquement en fonction du plan choisi ;
+    le prestataire ne précise que le plan et le moyen de paiement déclaré.
+    """
+
+    plan = forms.ChoiceField(
+        choices=[
+            (User.Plan.STANDARD.value, User.Plan.STANDARD.label),
+            (User.Plan.PRO.value, User.Plan.PRO.label),
+        ],
+        label='Nouveau plan',
+        widget=forms.RadioSelect,
+    )
+
+    class Meta:
+        model = Abonnement
+        fields = ('plan', 'methode')
+        labels = {
+            'methode': 'Moyen de paiement utilisé',
+        }

@@ -219,6 +219,17 @@ COMMISSION_DELAI_JOURS = 7
 # Délai de suspension accordé avant le bannissement définitif du prestataire.
 COMMISSION_SUSPENSION_JOURS = 7
 
+# Abonnements prestataires (freemium) : quota de propositions mensuelles.
+# Le plan « Gratuit » offre PLAN_GRAUIT_PROPOSITIONS par mois.
+PLAN_GRAUIT_PROPOSITIONS = 3
+# Plan Standard : prix FCFA / mois et quota de propositions mensuelles.
+PLAN_STANDARD_PRIX = 2000
+PLAN_STANDARD_PROPOSITIONS = 15
+# Plan Pro : prix FCFA / mois, quota illimité (+ badge Pro).
+PLAN_PRO_PRIX = 5000
+# Durée d'un abonnement payant payé (jours) à partir de la confirmation admin.
+ABONNEMENT_DUREE_JOURS = 30
+
 # ---------------------------------------------------------------------------
 # Fichiers statiques (CSS, JS, images, fonts)
 # ---------------------------------------------------------------------------

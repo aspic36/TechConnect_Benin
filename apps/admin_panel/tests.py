@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import Abonnement, User
 from apps.demandes.models import Demande
 
 
@@ -156,3 +156,57 @@ class CommissionSanctionsTests(TestCase):
         reponse = self.client.get(reverse('admin_panel:dashboard'))
         self.assertEqual(reponse.context['commissions_a_confirmer'], 1)
         self.assertEqual(reponse.context['commissions_en_retard'], 0)
+
+
+class AbonnementBackOfficeTests(TestCase):
+
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        self.client_u = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+        self.presta = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+        self.abonnement = Abonnement.objects.create(
+            prestataire=self.presta, plan=User.Plan.STANDARD, montant=2000,
+            methode=Abonnement.Methode.MOBILE_MONEY)
+
+    def test_liste_abonnements_reservee_au_staff(self):
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:abonnements'))
+        self.assertNotEqual(reponse.status_code, 200)
+
+    def test_confirmer_abonnement_active_le_plan(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:confirmer_abonnement', args=[self.abonnement.pk]))
+        self.abonnement.refresh_from_db()
+        self.presta.refresh_from_db()
+        self.assertEqual(self.abonnement.statut, Abonnement.Statut.ACTIF)
+        self.assertEqual(self.presta.plan, User.Plan.STANDARD)
+        self.assertIsNotNone(self.presta.date_debut_plan)
+        self.assertIsNotNone(self.abonnement.date_confirmation)
+        self.assertLess(
+            (self.presta.date_fin_plan - self.presta.date_debut_plan).days, 31)
+
+    def test_refuser_abonnement_laisse_le_plan(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:refuser_abonnement', args=[self.abonnement.pk]))
+        self.abonnement.refresh_from_db()
+        self.presta.refresh_from_db()
+        self.assertEqual(self.abonnement.statut, Abonnement.Statut.REFUSE)
+        self.assertEqual(self.presta.plan, User.Plan.GRATUIT)
+
+    def test_dashboard_compte_les_abonnements_a_confirmer(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:dashboard'))
+        self.assertEqual(reponse.context['abonnements_a_confirmer'], 1)
+
+    def test_confirmer_deux_fois_n_etend_pas_la_periode(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:confirmer_abonnement', args=[self.abonnement.pk]))
+        self.abonnement.refresh_from_db()
+        date_fin = self.abonnement.date_fin
+        self.client.get(reverse('admin_panel:confirmer_abonnement', args=[self.abonnement.pk]))
+        self.abonnement.refresh_from_db()
+        self.assertEqual(self.abonnement.date_fin, date_fin)
