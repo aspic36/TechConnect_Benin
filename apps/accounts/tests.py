@@ -66,6 +66,11 @@ class ConnexionTests(TestCase):
         reponse = self.client.get(reverse('accounts:accueil'))
         self.assertEqual(reponse.status_code, 200)
 
+    def test_anonyme_redirige_vers_la_page_de_connexion(self):
+        reponse = self.client.get(reverse('accounts:abonnement'))
+        self.assertRedirects(
+            reponse, reverse('accounts:connexion') + '?next=/abonnement/')
+
     def test_accueil_redirige_client(self):
         self.client.login(username='client1', password='Passw0rd!')
         reponse = self.client.get(reverse('accounts:accueil'))
