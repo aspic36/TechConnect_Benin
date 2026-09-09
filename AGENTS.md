@@ -129,6 +129,12 @@ python3 manage.py shell
     - Activation : `User.plan` + `date_debut_plan` + `date_fin_plan` (période 30 j) ; `plan_effectif()` retombe sur Gratuit si la période est expirée ; quota mensuel via `propositions_du_mois()`.
     - **Blocage du quota** dans `soumettre_proposition` (3/mois en Gratuit) avec redirection vers la page abonnement ; badges plan sur profil/prestataires ; carte alerte « Abonnements à confirmer » sur le dashboard ; CGU §5 bis.
     - seed_demo : yves (Pro actif) + nassirou (demande Standard en attente). Suite portée à **91 tests OK**.
+19. **Renforcement UX & notifications** :
+    - **Cartes d'abonnement cliquables** (sélection du plan par carte, radio cachée) ; quota **fixe par plan** (Gratuit = 3) ; recharge affichée **le 1er du mois** (`User.prochaine_recharge()`) ; formulaire masqué si Pro actif ; bandeau quota + recharge sur le catalogue.
+    - **Barre latérale gauche** pour toutes les pages connectées (par rôle, active link, responsive) ; header réduit (logo, rôle, 🔔, déconnexion).
+    - **Système de notifications** (`Notification` accounts, helper `creer_notification`/`notifier_staff`, context processor `nb_notifications`) : cloche + compteur + page `/notifications/`. Déclencheurs : abonnement confirmé/refusé, commission confirmée (→ prestataire) ; proposition acceptée (→ prestataire) ; demande validée/supprimée (→ client) ; nouvelle demande d'abonnement, commission déclarée, prestataire à vérifier, demande à modérer (→ staff). seed_demo : notification pour nassirou.
+    - **« Espèces » retiré** des moyens de paiement (abonnement ET paiement mission → Mobile Money / Virement uniquement).
+    - Suite portée à **106 tests OK**.
 
 ## 🔲 RESTE À FAIRE (roadmap)
 

@@ -18,20 +18,9 @@
         <nav class="navbar-links">
             {% if user.is_authenticated %}
                 <span class="nav-role">{{ user.get_role_display }}</span>
-                {% if user.role == 'client' %}
-                    <a class="nav-link" href="{% url 'demandes:mes_demandes' %}">Mes demandes</a>
-                    <a class="nav-link" href="{% url 'demandes:creation_demande' %}">Publier un besoin</a>
-                {% else %}
-                    <a class="nav-link" href="{% url 'demandes:catalogue' %}">Catalogue</a>
-                    <a class="nav-link" href="{% url 'propositions:mes_propositions' %}">Mes propositions</a>
-                    <a class="nav-link" href="{% url 'accounts:abonnement' %}">⭐ Abonnement</a>
-                    <a class="nav-link" href="{% url 'propositions:mes_commissions' %}">💰 Commissions</a>
-                {% endif %}
-                <a class="nav-link" href="{% url 'propositions:liste_missions' %}">Missions</a>
-                {% if user.is_staff %}
-                    <a class="nav-link" href="{% url 'admin_panel:dashboard' %}">Back-office</a>
-                {% endif %}
-                <a class="nav-link" href="{% url 'accounts:profil' %}">Profil</a>
+                <a class="notif-bell" href="{% url 'accounts:notifications' %}" title="Notifications">🔔
+                    {% if nb_notifications %}<span class="notif-count">{{ nb_notifications }}</span>{% endif %}
+                </a>
                 <a class="btn btn-outline btn-sm" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
             {% else %}
                 <a class="nav-link" href="{% url 'accounts:accueil' %}">Accueil</a>
@@ -49,9 +38,70 @@
         </div>
     {% endif %}
 
-    <main class="container">
+    {% if user.is_authenticated %}
+        <div class="app-layout">
+            <aside class="sidebar">
+                <nav>
+                    <div class="sidebar-title">Général</div>
+                    {% if user.role == 'client' %}
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_demandes,detail_demande' %}active{% endif %}"
+                           href="{% url 'demandes:mes_demandes' %}">📋 Mes demandes</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name == 'creation_demande' %}active{% endif %}"
+                           href="{% url 'demandes:creation_demande' %}">➕ Publier un besoin</a>
+                    {% else %}
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'catalogue,detail_demande' %}active{% endif %}"
+                           href="{% url 'demandes:catalogue' %}">🔍 Catalogue</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_propositions,soumettre' %}active{% endif %}"
+                           href="{% url 'propositions:mes_propositions' %}">📤 Mes propositions</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_commissions,regler_commission' %}active{% endif %}"
+                           href="{% url 'propositions:mes_commissions' %}">💰 Commissions</a>
+                    {% endif %}
+                    <a class="sidebar-link {% if request.resolver_match.url_name in 'liste_missions,detail_mission' %}active{% endif %}"
+                       href="{% url 'propositions:liste_missions' %}">🚀 Missions</a>
+
+                    {% if user.role == 'prestataire' %}
+                        <div class="sidebar-title">Abonnement</div>
+                        <a class="sidebar-link {% if request.resolver_match.url_name == 'abonnement' %}active{% endif %}"
+                           href="{% url 'accounts:abonnement' %}">⭐ Mon abonnement</a>
+                    {% endif %}
+
+                    {% if user.is_staff %}
+                        <div class="sidebar-title">Back-office</div>
+                        <a class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                           href="{% url 'admin_panel:dashboard' %}">📊 Tableau de bord</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'prestataires,verifier' %}active{% endif %}"
+                           href="{% url 'admin_panel:prestataires' %}">👥 Prestataires</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'demandes,valider_demande,refuser_demande' %}active{% endif %}"
+                           href="{% url 'admin_panel:demandes' %}">🗂 Demandes à modérer</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'litiges,clore_litige' %}active{% endif %}"
+                           href="{% url 'admin_panel:litiges' %}">⚖️ Litiges</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'commissions,confirmer_commission,prolonger_commission' %}active{% endif %}"
+                           href="{% url 'admin_panel:commissions' %}">💳 Commissions</a>
+                        <a class="sidebar-link {% if request.resolver_match.url_name in 'abonnements,confirmer_abonnement,refuser_abonnement' %}active{% endif %}"
+                           href="{% url 'admin_panel:abonnements' %}">⭐ Abonnements</a>
+                    {% endif %}
+
+                    <div class="sidebar-title">Compte</div>
+                    <a class="sidebar-link {% if request.resolver_match.url_name in 'notifications,marquer_lues' %}active{% endif %}"
+                       href="{% url 'accounts:notifications' %}">🔔 Notifications
+                        {% if nb_notifications %}<span class="badge litige">{{ nb_notifications }}</span>{% endif %}
+                    </a>
+                    <a class="sidebar-link {% if request.resolver_match.url_name in 'profil,modifier_profil' %}active{% endif %}"
+                       href="{% url 'accounts:profil' %}">👤 Profil</a>
+                </nav>
+                <a class="btn btn-outline btn-sm sidebar-logout" href="{% url 'accounts:deconnexion' %}">Déconnexion</a>
+            </aside>
+            <main class="app-main">
+    {% else %}
+        <main class="container">
+    {% endif %}
         {% block content %}{% endblock %}
-    </main>
+    {% if user.is_authenticated %}
+            </main>
+        </div>
+    {% else %}
+        </main>
+    {% endif %}
 
     <footer class="footer">
         <p>© 2026 TechConnect Bénin — La mise en relation des services informatiques au Bénin</p>

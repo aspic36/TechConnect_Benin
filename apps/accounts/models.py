@@ -97,6 +97,13 @@ class User(AbstractUser):
             return True, utilisees, None
         return utilisees < quota, utilisees, quota
 
+    def prochaine_recharge(self):
+        """Date du prochain 1er du mois, où le quota se recharge automatiquement."""
+        maintenant = timezone.now()
+        if maintenant.month == 12:
+            return maintenant.replace(year=maintenant.year + 1, month=1, day=1, hour=12)
+        return maintenant.replace(month=maintenant.month + 1, day=1, hour=12)
+
 
 class Abonnement(models.Model):
     """Demande d'abonnement payant d'un prestataire, confirmée par un admin.
@@ -113,10 +120,9 @@ class Abonnement(models.Model):
         REFUSE = 'refuse', 'Refusé'
 
     class Methode(models.TextChoices):
-        """Moyen de paiement déclaré par le prestataire (accord direct)."""
+        """Moyen de paiement déclaré par le prestataire (accord direct, à distance)."""
         MOBILE_MONEY = 'mobile_money', 'Mobile Money'
         VIREMENT = 'virement', 'Virement bancaire'
-        ESPECES = 'especes', 'Espèces'
 
     prestataire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='abonnements')
     plan = models.CharField(max_length=20, choices=User.Plan.choices)
@@ -135,3 +141,37 @@ class Abonnement(models.Model):
     def __str__(self):
         """Représentation lisible : prestataire, plan et montant."""
         return f"{self.prestataire.username} — {self.get_plan_display()} ({self.montant} FCFA)"
+
+
+class Notification(models.Model):
+    """Notification interne affichée via la cloche du site.
+
+    Notifie un utilisateur connecté d'un événement le concernant (abonnement
+    confirmé, commission réglée, proposition acceptée…) ou l'équipe staff des
+    éléments à traiter (demandes d'abonnement, commissions à confirmer…).
+    """
+
+    class Type(models.TextChoices):
+        """Domaine métier de la notification (pour l'icône et le regroupement)."""
+        ABONNEMENT = 'abonnement', 'Abonnement'
+        COMMISSION = 'commission', 'Commission'
+        MISSION = 'mission', 'Mission'
+        DEMANDE = 'demande', 'Demande'
+        SYSTEME = 'systeme', 'Système'
+
+    destinataire = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='notifications')
+    type = models.CharField(max_length=20, choices=Type.choices, default=Type.SYSTEME)
+    message = models.CharField(max_length=255)
+    # Chemin cible (nom de vue ou URL) où l'utilisateur peut réagir.
+    lien = models.CharField(max_length=255, blank=True)
+    est_lue = models.BooleanField(default=False)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Notification'
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        """Représentation lisible : destinataire et message."""
+        return f"{self.destinataire.username}: {self.message}"

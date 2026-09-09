@@ -85,3 +85,16 @@ class DemandeTests(TestCase):
         self.client.login(username='presta', password='Passw0rd!')
         reponse = self.client.get(reverse('demandes:detail_demande', args=[privee.pk]))
         self.assertEqual(reponse.status_code, 302)
+
+    def test_publication_notifie_le_staff(self):
+        from apps.accounts.models import Notification, User
+        staff = User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.post(reverse('demandes:creation_demande'), {
+            'titre': 'Nouvelle demande', 'description': 'Un besoin à définir',
+            'categorie': self.categorie.pk, 'budget_min': 1000, 'budget_max': 2000,
+        })
+        self.assertTrue(Notification.objects.filter(
+            destinataire=staff, type='demande').exists())

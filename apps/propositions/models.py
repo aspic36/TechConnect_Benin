@@ -92,10 +92,9 @@ class Paiement(models.Model):
     """Enregistrement d'un paiement par le client (accord direct MVP)."""
 
     class Methode(models.TextChoices):
-        """Moyens de paiement acceptés dans le modèle MVP."""
+        """Moyens de paiement acceptés dans le modèle MVP (à distance, traçables)."""
         MOBILE_MONEY = 'mobile_money', 'Mobile Money'
         VIREMENT = 'virement', 'Virement bancaire'
-        ESPECES = 'especes', 'Espèces'
 
     class Statut(models.TextChoices):
         """État du paiement : en attente ou payé."""
@@ -104,7 +103,7 @@ class Paiement(models.Model):
 
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name='paiements')
     montant = models.DecimalField(max_digits=12, decimal_places=0)
-    methode = models.CharField(max_length=20, choices=Methode.choices, default=Methode.ESPECES)
+    methode = models.CharField(max_length=20, choices=Methode.choices, default=Methode.MOBILE_MONEY)
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
     date_creation = models.DateTimeField(auto_now_add=True)
 

@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import InscriptionForm
-from .models import Abonnement, User
+from .models import Abonnement, Notification, User
 
 
 class InscriptionTests(TestCase):
@@ -252,3 +252,61 @@ class AbonnementTests(TestCase):
         reponse = self.client.get(reverse('accounts:abonnement'))
         self.assertContains(reponse, 'en attente')
         self.assertNotContains(reponse, 'Changer de plan')
+
+    def test_page_gratuit_affiche_trois_propositions(self):
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:abonnement'))
+        self.assertContains(reponse, '3 propositions par mois')
+
+    def test_plan_pro_cache_le_formulaire(self):
+        self.prestataire.plan = User.Plan.PRO
+        self.prestataire.date_debut_plan = timezone.now()
+        self.prestataire.date_fin_plan = timezone.now() + timezone.timedelta(days=20)
+        self.prestataire.save()
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:abonnement'))
+        self.assertContains(reponse, 'déjà sur le plan Pro')
+        self.assertNotContains(reponse, 'Changer de plan')
+
+    def test_demande_abonnement_notifie_le_staff(self):
+        staff = User.objects.create_user(
+            username='staff', password='Passw0rd!', role=User.Role.CLIENT, is_staff=True)
+        self.client.login(username='presta', password='Passw0rd!')
+        self._post_demande()
+        self.assertTrue(Notification.objects.filter(
+            destinataire=staff, type='abonnement').exists())
+
+
+class NotificationTests(TestCase):
+
+    def setUp(self):
+        self.client_u = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+        self.presta = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+
+    def test_creer_notification(self):
+        from .notifications import creer_notification
+        creer_notification([self.presta, self.client_u], 'Message', 'systeme')
+        self.assertEqual(Notification.objects.count(), 2)
+
+    def test_notifier_staff(self):
+        staff = User.objects.create_user(
+            username='staff', password='Passw0rd!', role=User.Role.CLIENT, is_staff=True)
+        from .notifications import notifier_staff
+        notifier_staff('Alerte interne', 'systeme')
+        self.assertEqual(Notification.objects.filter(destinataire=staff).count(), 1)
+
+    def test_page_notifications_liste_et_compteur(self):
+        Notification.objects.create(destinataire=self.client_u, message='Nouvelle alerte', type='systeme')
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:notifications'))
+        self.assertContains(reponse, 'Nouvelle alerte')
+        self.assertEqual(reponse.context['nb_notifications'], 1)
+
+    def test_marquer_toutes_lues(self):
+        Notification.objects.create(destinataire=self.client_u, message='x', type='systeme')
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.get(reverse('accounts:marquer_lues'))
+        self.client_u.refresh_from_db()
+        self.assertTrue(Notification.objects.filter(destinataire=self.client_u).filter(est_lue=True).count() == 1)

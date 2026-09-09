@@ -12,9 +12,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import Abonnement, User
+from apps.accounts.models import Abonnement, Notification, User
+from apps.accounts.notifications import creer_notification
 from apps.demandes.models import Demande
 from apps.propositions.models import Commission, Mission
 
@@ -84,6 +86,12 @@ def valider_demande(request, pk):
     demande = Demande.objects.get(pk=pk)
     demande.statut = Demande.Statut.EN_COURS
     demande.save()
+    creer_notification(
+        [demande.client],
+        f'Ta demande « {demande.titre} » a été validée et est publique !',
+        Notification.Type.DEMANDE,
+        reverse('demandes:detail_demande', args=[demande.pk]),
+    )
     messages.success(request, f'Demande validée : {demande.titre}')
     return redirect('admin_panel:demandes')
 
@@ -92,8 +100,15 @@ def valider_demande(request, pk):
 def refuser_demande(request, pk):
     """Supprime une demande jugée non conforme lors de la modération."""
     demande = Demande.objects.get(pk=pk)
+    client = demande.client
     titre = demande.titre
     demande.delete()
+    creer_notification(
+        [client],
+        f'Ta demande « {titre} » a été supprimée par la modération.',
+        Notification.Type.DEMANDE,
+        reverse('demandes:mes_demandes'),
+    )
     messages.success(request, f'Demande supprimée : {titre}')
     return redirect('admin_panel:demandes')
 
@@ -160,6 +175,12 @@ def confirmer_commission(request, pk):
         messages.success(request, f'Commission confirmée — {prestataire.username} est réactivé.')
     else:
         messages.success(request, f'Commission {commission.montant} FCFA confirmée.')
+    creer_notification(
+        [prestataire],
+        f'Ta commission de {commission.montant} FCFA a été confirmée. Merci !',
+        Notification.Type.COMMISSION,
+        reverse('propositions:mes_commissions'),
+    )
     return redirect('admin_panel:commissions')
 
 
@@ -234,6 +255,13 @@ def confirmer_abonnement(request, pk):
         prestataire.date_debut_plan = maintenant
         prestataire.date_fin_plan = abonnement.date_fin
         prestataire.save()
+        creer_notification(
+            [prestataire],
+            f'Ton abonnement {abonnement.get_plan_display()} est confirmé ! '
+            f'Actif 30 jours jusqu’au {abonnement.date_fin:%d/%m/%Y}.',
+            Notification.Type.ABONNEMENT,
+            reverse('accounts:abonnement'),
+        )
         messages.success(
             request,
             f'Abonnement {abonnement.get_plan_display()} activé pour '
@@ -251,5 +279,12 @@ def refuser_abonnement(request, pk):
     if abonnement.statut == Abonnement.Statut.EN_ATTENTE:
         abonnement.statut = Abonnement.Statut.REFUSE
         abonnement.save()
+        creer_notification(
+            [abonnement.prestataire],
+            f'Ton abonnement {abonnement.get_plan_display()} a été refusé. '
+            'Reprends contact avec l’administration.',
+            Notification.Type.ABONNEMENT,
+            reverse('accounts:abonnement'),
+        )
         messages.warning(request, f'Demande {abonnement.get_plan_display()} refusée.')
     return redirect('admin_panel:abonnements')

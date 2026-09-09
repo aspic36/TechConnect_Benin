@@ -20,5 +20,7 @@ urlpatterns = [
     path('profil/', views.profil, name='profil'),
     path('profil/modifier/', views.modifier_profil, name='modifier_profil'),
     path('abonnement/', views.abonnement, name='abonnement'),
+    path('notifications/', views.mes_notifications, name='notifications'),
+    path('notifications/marquer-lues/', views.marquer_lues, name='marquer_lues'),
     path('cgu/', views.cgu, name='cgu'),
 ]

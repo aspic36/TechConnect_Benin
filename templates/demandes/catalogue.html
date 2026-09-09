@@ -15,6 +15,18 @@
     </select>
     <button class="btn btn-outline" type="submit">Filtrer</button>
 </form>
+{% if user.role == 'prestataire' and quota is not None %}
+    <div class="filter-bar" style="background: var(--indigo-50); border-color: #c7d2fe;">
+        <span style="flex: 1;">📊 Propositions ce mois : <strong>{{ utilisees }}/{{ quota }}</strong>
+            · recharge automatique le {{ prochaine_recharge|date:'d/m' }}</span>
+        <a class="btn btn-accent btn-sm" href="{% url 'accounts:abonnement' %}">⭐ Gérer mon abonnement</a>
+    </div>
+{% elif user.role == 'prestataire' %}
+    <div class="filter-bar" style="background: var(--emerald-50); border-color: #a7f3d0;">
+        <span style="flex: 1;">🚀 Plan Pro : propositions illimitées !</span>
+        <a class="btn btn-accent btn-sm" href="{% url 'accounts:abonnement' %}">⭐ Mon abonnement</a>
+    </div>
+{% endif %}
 {% if demandes %}
     <div class="grid">
         {% for demande in demandes %}

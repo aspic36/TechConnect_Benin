@@ -12,8 +12,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.models import Notification
+from apps.accounts.notifications import creer_notification, notifier_staff
 from apps.demandes.models import Demande
 
 from .forms import EvaluationForm, PaiementForm, PropositionForm, ReglementCommissionForm
@@ -105,6 +108,12 @@ def accepter_proposition(request, pk):
     # La demande passe en statut "mission active".
     demande.statut = Demande.Statut.MISSION_ACTIVE
     demande.save()
+    creer_notification(
+        [proposition.prestataire],
+        f'Ta proposition pour « {demande.titre} » a été acceptée ! Mission lancée.',
+        Notification.Type.MISSION,
+        reverse('propositions:detail_mission', args=[mission.pk]),
+    )
     messages.success(request, 'Proposition acceptée ! Une mission a été créée.')
     return redirect('propositions:detail_mission', pk=mission.pk)
 
@@ -209,6 +218,12 @@ def regler_commission(request, pk):
             commission = form.save(commit=False)
             commission.date_declaration = timezone.now()
             commission.save()
+            notifier_staff(
+                f'{request.user.username} a déclaré le règlement de sa commission '
+                f'({commission.montant} FCFA).',
+                Notification.Type.COMMISSION,
+                reverse('admin_panel:commissions'),
+            )
             messages.success(
                 request,
                 'Règlement déclaré. Un administrateur va confirmer ta commission.',

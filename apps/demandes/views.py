@@ -4,6 +4,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+
+from apps.accounts.models import Notification
+from apps.accounts.notifications import notifier_staff
 
 from .forms import DemandeForm
 from .models import Categorie, Demande
@@ -23,6 +27,11 @@ def creation_demande(request):
             demande = form.save(commit=False)
             demande.client = request.user
             demande.save()
+            notifier_staff(
+                f'Nouvelle demande à modérer : « {demande.titre} »',
+                Notification.Type.DEMANDE,
+                reverse('admin_panel:demandes'),
+            )
             messages.success(request, 'Ta demande a été publiée en attente de validation.')
             return redirect('demandes:mes_demandes')
     else:
@@ -51,6 +60,18 @@ def catalogue(request):
     if q:
         demandes = demandes.filter(Q(titre__icontains=q) | Q(description__icontains=q))
     categories = Categorie.objects.all()
+    # Infos du quota d'abonnement pour le bandeau d'information du catalogue.
+    if request.user.role == 'prestataire':
+        autorise, utilisees, quota = request.user.peut_proposer()
+        return render(request, 'demandes/catalogue.html', {
+            'demandes': demandes,
+            'categories': categories,
+            'categorie_active': categorie_slug,
+            'autorise': autorise,
+            'utilisees': utilisees,
+            'quota': quota,
+            'prochaine_recharge': request.user.prochaine_recharge(),
+        })
     return render(request, 'demandes/catalogue.html', {
         'demandes': demandes,
         'categories': categories,

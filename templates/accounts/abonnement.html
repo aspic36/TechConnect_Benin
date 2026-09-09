@@ -5,8 +5,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
         <div>
             <h2 style="margin: 0;">⭐ Mon abonnement</h2>
-            <p>Plan actuel : <span class="badge {% if user.plan_effectif == 'pro' %}acceptee{% else %}en_attente{% endif %}">{{ user.get_plan_display }}</span>
-                {% if user.date_fin_plan %} · valable jusqu'au {{ user.date_fin_plan|date:'d/m/Y' }}{% endif %}
+            <p>Plan actuel : <span class="badge {% if plan_actuel == 'pro' %}acceptee{% elif plan_actuel == 'standard' %}en_attente{% else %}envoyee{% endif %}">{{ user.get_plan_display }}</span>
+            {% if user.date_fin_plan %} · valable jusqu'au {{ user.date_fin_plan|date:'d/m/Y' }}{% endif %}
             </p>
         </div>
         <a class="btn btn-ghost btn-sm" href="{% url 'accounts:profil' %}">← Profil</a>
@@ -19,50 +19,67 @@
         <p class="card-text">Ta demande d'abonnement
             <strong>{{ en_attente.get_plan_display }} ({{ en_attente.montant }} FCFA)</strong>
             du {{ en_attente.date_demande|date:'d/m/Y' }} est <strong>en attente</strong>.
-            Un administrateur va la confirmer.
+            Un administrateur va la confirmer (tu en seras notifié).
+        </p>
+    </div>
+{% elif plan_actuel == 'pro' %}
+    <div class="card" style="border-color: #a7f3d0;">
+        <h3 class="card-title">🚀 Tu es déjà sur le plan Pro</h3>
+        <p class="card-text">Propositions illimitées : aucune restriction pour le moment.
+            {% if user.date_fin_plan %}Ta période court jusqu'au {{ user.date_fin_plan|date:'d/m/Y' }}.{% endif %}
         </p>
     </div>
 {% else %}
-    <div class="grid" style="margin-bottom: 1.2rem;">
-        <div class="card">
-            <h3 class="card-title">🆓 Gratuit — 0 FCFA/mois</h3>
-            <p class="card-text">{{ quota }} propositions par mois</p>
-            <p class="card-meta">Le plan de départ, sans engagement.</p>
-            {% if user.plan_effectif == 'gratuit' %}<span class="badge acceptee">Plan actuel</span>{% endif %}
+    <div class="plan-grid">
+        <div class="plan-card static">
+            <div class="plan-card-inner{% if plan_actuel == 'gratuit' %} is-current{% endif %}">
+                <h3 class="card-title">🆓 Gratuit — 0 FCFA/mois</h3>
+                <p class="card-text"><strong>{{ plan_gratuit_propositions }} propositions par mois</strong></p>
+                <p class="card-meta">Le plan de départ, sans engagement. Quota rechargé chaque 1er du mois.</p>
+                {% if plan_actuel == 'gratuit' %}<span class="badge acceptee">Plan actuel</span>{% endif %}
+            </div>
         </div>
-        <div class="card">
-            <h3 class="card-title">📈 Standard — 2 000 FCFA/mois</h3>
-            <p class="card-text">15 propositions par mois</p>
-            <p class="card-meta">Pour les prestataires réguliers.</p>
-            {% if user.plan_effectif == 'standard' %}<span class="badge acceptee">Plan actuel</span>{% endif %}
-        </div>
-        <div class="card">
-            <h3 class="card-title">🚀 Pro — 5 000 FCFA/mois</h3>
-            <p class="card-text">Propositions illimitées + badge Pro</p>
-            <p class="card-meta">Pour les professionnels actifs.</p>
-            {% if user.plan_effectif == 'pro' %}<span class="badge acceptee">Plan actuel</span>{% endif %}
-        </div>
+        <label class="plan-card{% if plan_actuel == 'standard' %} is-disabled{% endif %}">
+            {% if plan_actuel != 'standard' %}
+                <input type="radio" name="plan" value="standard">
+            {% endif %}
+            <div class="plan-card-inner{% if plan_actuel == 'standard' %} is-current{% endif %}">
+                <h3 class="card-title">📈 Standard — {{ plan_standard_prix }} FCFA/mois</h3>
+                <p class="card-text"><strong>{{ plan_standard_propositions }} propositions par mois</strong></p>
+                <p class="card-meta">Pour les prestataires réguliers.</p>
+                {% if plan_actuel == 'standard' %}<span class="badge acceptee">Plan actuel</span>{% endif %}
+            </div>
+        </label>
+        <label class="plan-card">
+            <input type="radio" name="plan" value="pro">
+            <div class="plan-card-inner">
+                <h3 class="card-title">🚀 Pro — {{ plan_pro_prix }} FCFA/mois</h3>
+                <p class="card-text"><strong>Propositions illimitées</strong> + badge Pro</p>
+                <p class="card-meta">Pour les professionnels actifs.</p>
+            </div>
+        </label>
     </div>
 
-    <div class="card" style="max-width: 480px;">
+    <div class="card" style="max-width: 520px;">
         <h3 class="card-title">Changer de plan</h3>
         {% if quota %}
-            <p class="card-meta">Quota du mois : {{ utilisees }}/{{ quota }} propositions utilisées.</p>
+            <p class="card-meta">Quota du mois : <strong>{{ utilisees }}/{{ quota }}</strong> propositions utilisées
+                · recharge le {{ prochaine_recharge|date:'d/m' }}.</p>
         {% else %}
             <p class="card-meta">Quota illimité : pas de limitation actuellement.</p>
         {% endif %}
         <form method="post">
             {% csrf_token %}
-            {% for champ in form %}
-                <div class="form-group">
-                    <label for="{{ champ.id_for_label }}">{{ champ.label }}</label>
-                    {{ champ }}
-                    {% if champ.errors %}
-                        <p class="form-error">{{ champ.errors|striptags }}</p>
-                    {% endif %}
-                </div>
-            {% endfor %}
-            <p class="card-meta">Après ta demande, un administrateur confirmera ton abonnement.</p>
+            {{ form.plan.errors }}
+            <div class="form-group">
+                <label for="{{ form.methode.id_for_label }}">{{ form.methode.label }}</label>
+                {{ form.methode }}
+                {% if form.methode.errors %}
+                    <p class="form-error">{{ form.methode.errors|striptags }}</p>
+                {% endif %}
+            </div>
+            <p class="card-meta">Sélectionne un plan ci-dessus puis demande l'upgrade : un administrateur
+                confirmera l'activation (notification envoyée).</p>
             <div class="actions">
                 <button type="submit" class="btn btn-accent btn-lg">💾 Demander l'upgrade</button>
             </div>

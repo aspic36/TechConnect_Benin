@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import Abonnement, User
+from apps.accounts.models import Abonnement, Notification, User
 from apps.demandes.models import Demande
 
 
@@ -210,3 +210,46 @@ class AbonnementBackOfficeTests(TestCase):
         self.client.get(reverse('admin_panel:confirmer_abonnement', args=[self.abonnement.pk]))
         self.abonnement.refresh_from_db()
         self.assertEqual(self.abonnement.date_fin, date_fin)
+
+    def test_confirmer_abonnement_notifie_le_prestataire(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:confirmer_abonnement', args=[self.abonnement.pk]))
+        notification = Notification.objects.get(destinataire=self.presta)
+        self.assertEqual(notification.type, 'abonnement')
+        self.assertFalse(notification.est_lue)
+
+    def test_refuser_abonnement_notifie_le_prestataire(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:refuser_abonnement', args=[self.abonnement.pk]))
+        notification = Notification.objects.get(destinataire=self.presta)
+        self.assertEqual(notification.type, 'abonnement')
+
+    def test_valider_demande_notifie_le_client(self):
+        demande = Demande.objects.create(
+            client=self.client_u, titre='À valider', description='x',
+            statut=Demande.Statut.EN_ATTENTE)
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:valider_demande', args=[demande.pk]))
+        notification = Notification.objects.get(destinataire=self.client_u)
+        self.assertEqual(notification.type, 'demande')
+
+    def test_confirmer_commission_notifie_le_prestataire(self):
+        from apps.demandes.models import Categorie
+        from apps.propositions.models import Commission, Mission, Proposition
+        categorie = Categorie.objects.create(nom='Web', slug='web')
+        demande = Demande.objects.create(
+            client=self.client_u, categorie=categorie, titre='Site',
+            description='x', statut=Demande.Statut.EN_COURS)
+        proposition = Proposition.objects.create(
+            demande=demande, prestataire=self.presta,
+            prix=100000, delais_jours=10, statut=Proposition.Statut.ACCEPTEE)
+        mission = Mission.objects.create(
+            demande=demande, proposition=proposition,
+            client=self.client_u, prestataire=self.presta,
+            statut=Mission.Statut.TERMINEE)
+        commission = Commission.objects.create(
+            mission=mission, montant=10000, date_limite=timezone.now())
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:confirmer_commission', args=[commission.pk]))
+        notification = Notification.objects.get(destinataire=self.presta)
+        self.assertEqual(notification.type, 'commission')

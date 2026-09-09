@@ -12,9 +12,11 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from .forms import ConnexionForm, DemandeAbonnementForm, InscriptionForm, ProfilForm
-from .models import Abonnement, User
+from .models import Abonnement, Notification, User
+from .notifications import notifier_staff
 from .security import enregistrer_echec, reinitialiser_echecs, tentative_autorisee
 
 
@@ -62,6 +64,13 @@ def inscription(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
+            # Un nouveau prestataire déclenche une alerte staff (à vérifier).
+            if user.role == User.Role.PRESTATAIRE:
+                notifier_staff(
+                    f'Nouveau prestataire à vérifier : {user.username}',
+                    Notification.Type.SYSTEME,
+                    reverse('admin_panel:prestataires'),
+                )
             messages.success(request, f'Bienvenue {user.username} !')
             return redirect(accueil_selon_role(user))
     else:
@@ -161,6 +170,12 @@ def abonnement(request):
                 User.Plan.PRO: settings.PLAN_PRO_PRIX,
             }[demande.plan]
             demande.save()
+            notifier_staff(
+                f'Nouvelle demande d’abonnement {demande.get_plan_display()} '
+                f'({demande.montant} FCFA) — {request.user.username}',
+                Notification.Type.ABONNEMENT,
+                reverse('admin_panel:abonnements'),
+            )
             messages.info(
                 request,
                 f'Demande d’abonnement {demande.get_plan_display()} ({demande.montant} FCFA) '
@@ -175,4 +190,24 @@ def abonnement(request):
         'utilisees': utilisees,
         'quota': quota,
         'en_attente': en_attente,
+        'plan_actuel': request.user.plan_effectif(),
+        'prochaine_recharge': request.user.prochaine_recharge(),
+        'plan_gratuit_propositions': settings.PLAN_GRAUIT_PROPOSITIONS,
+        'plan_standard_prix': settings.PLAN_STANDARD_PRIX,
+        'plan_standard_propositions': settings.PLAN_STANDARD_PROPOSITIONS,
+        'plan_pro_prix': settings.PLAN_PRO_PRIX,
     })
+
+
+@login_required
+def mes_notifications(request):
+    """Affiche les notifications de l'utilisateur connecté (non lues d'abord)."""
+    notifications = request.user.notifications.all()
+    return render(request, 'accounts/notifications.html', {'notifications': notifications})
+
+
+@login_required
+def marquer_lues(request):
+    """Marque toutes les notifications de l'utilisateur comme lues."""
+    request.user.notifications.filter(est_lue=False).update(est_lue=True)
+    return redirect('accounts:notifications')

@@ -149,6 +149,7 @@ python3 manage.py shell              # console interactive
 - [x] Sauvegardes MySQL automatiques (cron, rotation 14 jours)
 - [x] Monétisation : commission 10% + sanctions (suspension → bannissement)
 - [x] Monétisation : abonnements prestataires (Gratuit 3 propositions/mois, Standard 15, Pro illimité)
+- [x] UX & notifications : cartes d'abonnement cliquables, barre latérale par rôle, cloche de notifications, recharge du quota le 1er du mois
 - [ ] Déploiement production (Linux + Nginx + HTTPS)
 - [ ] API REST + application mobile (Flutter)
 

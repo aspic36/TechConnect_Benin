@@ -254,7 +254,17 @@ class Command(BaseCommand):
         )
         self.stdout.write('Commission de démo créée.')
 
-        # --- 11. Message de succes ---
+        # --- 11. Notifications de démo (cloche) ---
+        from apps.accounts.models import Notification
+        Notification.objects.create(
+            destinataire=nassirou,
+            type=Notification.Type.ABONNEMENT,
+            message='Ta demande d’abonnement Standard est en attente de confirmation.',
+            lien='/abonnement/',
+        )
+        self.stdout.write('Notification de démo créée.')
+
+        # --- 12. Message de succes ---
         self.stdout.write(self.style.SUCCESS(
             'Données de démo prêtes ! Comptes (mot de passe "Demo@2026!") : '
             'amina (client), codjo (client), yves (prestataire, plan Pro), '

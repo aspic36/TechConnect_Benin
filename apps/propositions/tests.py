@@ -245,6 +245,15 @@ class PaiementTests(BaseTests):
         self.assertEqual(reponse.status_code, 302)
         self.assertEqual(mission.paiements.count(), 0)
 
+    def test_methode_especes_refusee(self):
+        self.client.login(username='client', password='Passw0rd!')
+        mission = self._mission()
+        self.client.post(
+            reverse('propositions:paiement', args=[mission.pk]),
+            {'montant': 100000, 'methode': 'especes'},
+        )
+        self.assertEqual(mission.paiements.count(), 0)
+
     def test_enregistrer_un_paiement(self):
         mission = self._mission()
         self.client.login(username='client', password='Passw0rd!')
@@ -365,3 +374,32 @@ class SanctionsAutomatiquesTests(BaseTests):
         # …mais la page de règlement reste accessible.
         reponse = self.client.get(reverse('propositions:mes_commissions'))
         self.assertEqual(reponse.status_code, 200)
+
+
+class NotificationDeclenchementTests(BaseTests):
+    """Les actions métier clés créent des notifications aux bons destinataires."""
+
+    def test_proposition_acceptee_notifie_le_prestataire(self):
+        from apps.accounts.models import Notification
+        proposition = self._proposition()
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.get(reverse('propositions:accepter', args=[proposition.pk]))
+        self.assertTrue(Notification.objects.filter(
+            destinataire=self.presta, type='mission').exists())
+
+    def test_reglement_commission_notifie_le_staff(self):
+        from apps.accounts.models import Notification, User
+        staff = User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        mission = self._mission()
+        commission = Commission.objects.create(
+            mission=mission, montant=10000,
+            date_limite=timezone.now() + timezone.timedelta(days=5))
+        self.client.login(username='presta', password='Passw0rd!')
+        self.client.post(
+            reverse('propositions:regler_commission', args=[commission.pk]),
+            {'methode': 'virement'},
+        )
+        self.assertTrue(Notification.objects.filter(
+            destinataire=staff, type='commission').exists())

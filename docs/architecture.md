@@ -154,7 +154,7 @@ Base unique : **`techconnect_benin`** (jeu de caractères `utf8mb4`).
 |---|---|---|
 | mission | FK → propositions_mission | CASCADE, related = `paiements` |
 | montant | Decimal(12) | FCFA |
-| methode | Char(20) | mobile_money / virement / especes |
+| methode | Char(20) | mobile_money / virement |
 | statut | Char(20) | en_attente / paye |
 
 #### messagerie_message

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Mes notifications — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">🔔 Mes notifications</h2>
+            <p>Les événements qui concernent ton compte et les alertes à traiter.</p>
+        </div>
+        {% if notifications %}
+            <a class="btn btn-ghost btn-sm" href="{% url 'accounts:marquer_lues' %}">✓ Tout marquer comme lu</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if notifications %}
+    {% for n in notifications %}
+        <div class="card" {% if not n.est_lue %}style="border-left: 4px solid var(--primary); border-color: #c7d2fe;"{% endif %}>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: flex-start; gap: 0.7rem; min-width: 220px; flex: 1;">
+                    <span class="badge en_cours" style="margin-top: 0.15rem;">{{ n.get_type_display }}</span>
+                    <div>
+                        <p class="card-text" style="margin: 0;">
+                            {{ n.message }}
+                            {% if not n.est_lue %}<span class="badge litige" style="margin-left: 0.4rem;">Nouveau</span>{% endif %}
+                        </p>
+                        <p class="card-meta" style="font-size: 0.78rem; margin-top: 0.3rem;">{{ n.date_creation|date:'d/m/Y à H:i' }}</p>
+                    </div>
+                </div>
+                {% if n.lien %}
+                    <a class="btn btn-outline btn-sm" href="{{ n.lien }}">Voir</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">
+        <div class="big">🔕</div>
+        <p>Aucune notification pour le moment.</p>
+    </div>
+{% endif %}
+{% endblock %}
