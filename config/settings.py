@@ -79,6 +79,10 @@ INSTALLED_APPS = [
 # (apps.accounts.User) qui gère les rôles client / prestataire.
 AUTH_USER_MODEL = 'accounts.User'
 
+# Les vues protégées par @login_required redirigent vers notre page de
+# connexion (et non vers le /accounts/login/ par défaut de Django).
+LOGIN_URL = 'accounts:connexion'
+
 # ---------------------------------------------------------------------------
 # Middleware
 # ---------------------------------------------------------------------------
