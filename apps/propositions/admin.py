@@ -41,7 +41,7 @@ class PaiementAdmin(admin.ModelAdmin):
 
 @admin.register(Commission)
 class CommissionAdmin(admin.ModelAdmin):
-    """Administration des commissions de la plateforme (10% du prix des missions)."""
+    """Administration des commissions de la plateforme (part de chaque mission)."""
     list_display = ('mission', 'montant', 'statut', 'date_limite', 'date_declaration', 'date_paiement')
     list_filter = ('statut',)
     list_select_related = ('mission__demande',)

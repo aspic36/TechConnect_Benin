@@ -1,7 +1,7 @@
 """
 Outils de prévention du contournement de la plateforme.
 
-TechConnect prélève une commission de 10% sur chaque mission : échanger des
+TechConnect prélève une commission (COMMISSION_POURCENT %) sur chaque mission : échanger des
 coordonnées directes (téléphone, WhatsApp…) dans la messagerie permet de
 poursuivre en direct hors plateforme. Ce module détecte les numéros
 béninois (format international ``+229`` ou national) pour les bloquer.

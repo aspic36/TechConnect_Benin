@@ -259,24 +259,25 @@ class PaiementTests(BaseTests):
         self.client.login(username='client', password='Passw0rd!')
         self.client.post(
             reverse('propositions:paiement', args=[mission.pk]),
-            {'montant': 100000, 'methode': 'mobile_money'},
+            {'montant': 100000, 'methode': 'mtn_momo'},
         )
         paiement = mission.paiements.get()
         self.assertEqual(paiement.montant, 100000)
-        self.assertEqual(paiement.methode, Paiement.Methode.MOBILE_MONEY)
-        self.assertEqual(paiement.statut, Paiement.Statut.EN_ATTENTE)
+        self.assertEqual(paiement.methode, Paiement.Methode.MTN_MOMO)
+        self.assertEqual(paiement.statut, Paiement.Statut.EN_COURS)
 
 
 class CommissionTests(BaseTests):
 
-    def test_clore_mission_cree_commission_de_10_pourcent(self):
+    def test_clore_mission_cree_commission_du_pourcentage_configure(self):
         from django.conf import settings
         mission = self._mission()
         self.client.login(username='client', password='Passw0rd!')
         self.client.get(reverse('propositions:clore', args=[mission.pk]))
         commission = Commission.objects.get(mission=mission)
-        # 10% de 100000 FCFA
-        self.assertEqual(commission.montant, 10000)
+        # Pourcentage configuré appliqué au prix de la proposition acceptée.
+        self.assertEqual(commission.montant,
+                         mission.proposition.prix * settings.COMMISSION_POURCENT // 100)
         self.assertEqual(commission.statut, Commission.Statut.EN_ATTENTE)
         delai = (commission.date_limite - mission.date_creation).days
         self.assertEqual(delai, settings.COMMISSION_DELAI_JOURS)
@@ -311,7 +312,7 @@ class CommissionTests(BaseTests):
         self.client.login(username='presta', password='Passw0rd!')
         self.client.post(
             reverse('propositions:regler_commission', args=[commission.pk]),
-            {'methode': 'mobile_money'},
+            {'methode': 'mtn_momo'},
         )
         commission.refresh_from_db()
         self.assertIsNotNone(commission.date_declaration)

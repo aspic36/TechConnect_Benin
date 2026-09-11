@@ -143,6 +143,13 @@ python3 manage.py shell
     - Prochaine étape = P1 (commission **5 %**, modèle `Paiement` enrichi, clôture & payout).
     - Suite portée à **118 tests OK**.
 
+21. **P1 — Commission 5 % + modèle Paiement escrow (terminé)** :
+    - `COMMISSION_POURCENT = 5` (settings) ; texte 10% → 5% partout (CGU, dashboard, messagerie, back-office, docstrings).
+    - Modèle `Paiement` enrichi : méthodes `mtn_momo` / `moov` / `celtis` / `virement`, statuts `en_cours` / `en_attente` / `paye` / `echec`, `reference_txn` (unique) et `donnees_webhook` (JSON) ; `Commission.reference_payout` (reversement FedaPay).
+    - Migration `0004` incluant une **data migration** : `mobile_money`/`especes` → `mtn_momo`/`virement`.
+    - seed_demo : commission calculée via `settings.COMMISSION_POURCENT`. Suite toujours à **118 tests OK**.
+    - Prochaine étape = P2 : flux escrow (initier_paiement remplace enregistrer_paiement, clore bloque si impayé, payout 95 % → commission payée automatiquement).
+
 ## 🔲 RESTE À FAIRE (roadmap)
 
 **Logiciel (MVP)**

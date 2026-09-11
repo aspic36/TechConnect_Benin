@@ -15,6 +15,7 @@ puis recree l'ensemble des objets.
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -244,11 +245,11 @@ class Command(BaseCommand):
         )
         self.stdout.write('Évaluations de démo créées.')
 
-        # --- 10. Commission plateforme (10% de la mission terinée m7) ---
-        # Montant : 10% de 100000 FCFA = 10000 FCFA, à régler sous 7 jours.
+        # --- 10. Commission plateforme (COMMISSION_POURCENT % de la mission clôturée m7) ---
+        # Montant : 5% de 100000 FCFA = 5000 FCFA, à régler sous 7 jours.
         Commission.objects.create(
             mission=m7,
-            montant=p7a.prix * 10 // 100,
+            montant=p7a.prix * settings.COMMISSION_POURCENT // 100,
             methode='virement',
             date_limite=maintenant + timedelta(days=2),
         )

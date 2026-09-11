@@ -218,9 +218,10 @@ if not DEBUG:
 # ---------------------------------------------------------------------------
 # Économie de la plateforme
 # ---------------------------------------------------------------------------
-# Commission prélevée sur le prix de chaque mission (accord direct : le client
-# paie le prestataire, qui reverse ensuite la commission à la plateforme).
-COMMISSION_POURCENT = 10
+# Commission prélevée sur le prix de chaque mission (retenue sur le
+# reversement FedaPay au prestataire à la clôture : 95% au prestataire,
+# COMMISSION_POURCENT % à la plateforme).
+COMMISSION_POURCENT = 5
 # Délai accordé au prestataire pour régler sa commission après la clôture.
 COMMISSION_DELAI_JOURS = 7
 # Délai de suspension accordé avant le bannissement définitif du prestataire.

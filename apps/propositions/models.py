@@ -89,22 +89,36 @@ class Evaluation(models.Model):
 
 
 class Paiement(models.Model):
-    """Enregistrement d'un paiement par le client (accord direct MVP)."""
+    """Paiement d'une mission, collecté à l'avance (escrow Mobile Money).
+
+    Le client paie le prix au lancement de la mission (escrow) : les fonds
+    sont bloqués sur le compte plateforme, confirmés par le fournisseur de
+    paiement (FedaPay, statut ``paye``) puis reversés au prestataire à la
+    clôture (commission ``COMMISSION_POURCENT`` % retenue).
+    """
 
     class Methode(models.TextChoices):
-        """Moyens de paiement acceptés dans le modèle MVP (à distance, traçables)."""
-        MOBILE_MONEY = 'mobile_money', 'Mobile Money'
+        """Opérateurs Mobile Money du Bénin + virement bancaire en repli."""
+        MTN_MOMO = 'mtn_momo', 'MTN Mobile Money'
+        MOOV = 'moov', 'Moov Money'
+        CELTIS = 'celtis', 'Celtiis Cash'
         VIREMENT = 'virement', 'Virement bancaire'
 
     class Statut(models.TextChoices):
-        """État du paiement : en attente ou payé."""
+        """État de la collecte : initiée, en attente de confirmation, payée, échec."""
+        EN_COURS = 'en_cours', 'En cours'
         EN_ATTENTE = 'en_attente', 'En attente'
         PAYE = 'paye', 'Payé'
+        ECHEC = 'echec', 'Échec'
 
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name='paiements')
     montant = models.DecimalField(max_digits=12, decimal_places=0)
-    methode = models.CharField(max_length=20, choices=Methode.choices, default=Methode.MOBILE_MONEY)
-    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    methode = models.CharField(max_length=20, choices=Methode.choices, default=Methode.MTN_MOMO)
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_COURS)
+    reference_txn = models.CharField(
+        max_length=64, blank=True, null=True, unique=True,
+        verbose_name='Référence transaction (FedaPay)')
+    donnees_webhook = models.JSONField(default=dict, blank=True, verbose_name='Événement webhook reçu')
     date_creation = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -117,12 +131,13 @@ class Paiement(models.Model):
 
 
 class Commission(models.Model):
-    """Part de la plateforme (10 % du prix) due par le prestataire après une clôture.
+    """Part de la plateforme (``COMMISSION_POURCENT`` % du prix) due sur une mission.
 
-    Créée automatiquement quand une mission se termine : le prestataire dispose
-    d'un délai (COMMISSION_DELAI_JOURS) pour la régler. Passé ce délai, sa
-    sanction est la suspension puis le bannissement (géré par la commande
-    ``verifier_commissions``).
+    Créée automatiquement quand une mission se termine : le montant est retenu
+    sur le reversement FedaPay du prestataire (référence dans
+    ``reference_payout``). Le flux manuel historique (déclaration du
+    prestataire puis confirmation par l'administrateur) reste disponible
+    jusqu'à la bascule complète vers le reversement automatique.
     """
 
     class Statut(models.TextChoices):
@@ -134,6 +149,8 @@ class Commission(models.Model):
     montant = models.DecimalField(max_digits=12, decimal_places=0)
     methode = models.CharField(max_length=20, choices=Paiement.Methode.choices, blank=True)
     statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    reference_payout = models.CharField(
+        max_length=64, blank=True, verbose_name='Référence reversement (FedaPay)')
     date_limite = models.DateTimeField(verbose_name='Date limite de règlement')
     date_declaration = models.DateTimeField(null=True, blank=True, verbose_name='Date de déclaration de règlement')
     date_paiement = models.DateTimeField(null=True, blank=True, verbose_name='Date de confirmation de paiement')

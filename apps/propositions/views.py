@@ -167,8 +167,8 @@ def clore_mission(request, pk):
     # La demande associée est clôturée en même temps que la mission.
     mission.demande.statut = Demande.Statut.CLOTUREE
     mission.demande.save()
-    # La clôture déclenche la création de la commission de la plateforme (10 %
-    # du prix) qui doit être réglée par le prestataire sous quelques jours.
+    # La clôture déclenche la création de la commission de la plateforme
+    # (COMMISSION_POURCENT % du prix) retenue sur le reversement du prestataire.
     # Idempotent : la commission n'est créée qu'une seule fois par mission.
     if not hasattr(mission, 'commission'):
         commission_pourcent = settings.COMMISSION_POURCENT
