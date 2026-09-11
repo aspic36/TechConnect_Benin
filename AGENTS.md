@@ -136,6 +136,13 @@ python3 manage.py shell
     - **« Espèces » retiré** des moyens de paiement (abonnement ET paiement mission → Mobile Money / Virement uniquement).
     - Suite portée à **106 tests OK**.
 
+20. **P0 — Mobile Money FedaPay (escrow, P0 terminé)** :
+    - Nouvelle app **`apps/paiements/`** : provider abstraction (`providers/base.py`), implémentation FedaPay sandbox (`providers/fedapay.py` — collecte via redirection `payment_url`, reversement via `/payouts`, webhook `X-FEDAPAY-SIGNATURE` HMAC-SHA256).
+    - Clés sandbox (`FEDAPAY_*`) dans `.env` (jamais commité) ; `FEDAPAY_MODES_OPERATEURS` : `mtn_momo`→`mtn_open`, `moov`→`moov`, `celtis`→`sbin`.
+    - 11 tests unitaires (mock) + vérification live sandbox : transaction créée + `payment_url` récupérée + statut `pending`.
+    - Prochaine étape = P1 (commission **5 %**, modèle `Paiement` enrichi, clôture & payout).
+    - Suite portée à **118 tests OK**.
+
 ## 🔲 RESTE À FAIRE (roadmap)
 
 **Logiciel (MVP)**

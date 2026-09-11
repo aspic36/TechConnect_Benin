@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'apps.propositions',
     'apps.messagerie',
     'apps.admin_panel',
+    'apps.paiements',
 ]
 
 # ---------------------------------------------------------------------------
@@ -258,3 +259,23 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Utilise BigInt au lieu de Int pour les clés primaires auto-incrémentées :
 # supporte un volume bien plus important de données.
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ---------------------------------------------------------------------------
+# FedaPay — Mobile Money (MTN MoMo / Moov / Celtis), collecte & reversement
+# ---------------------------------------------------------------------------
+# Clés FedaPay (sandbox ou production) ; charger dans le fichier .env.
+FEDAPAY_PUBLIC_KEY = os.getenv('FEDAPAY_PUBLIC_KEY', '')
+FEDAPAY_SECRET_KEY = os.getenv('FEDAPAY_SECRET_KEY', '')
+FEDAPAY_MODE = os.getenv('FEDAPAY_MODE', 'sandbox')  # 'sandbox' | 'live'
+FEDAPAY_BASE_URL = (
+    'https://sandbox-api.fedapay.com/v1' if FEDAPAY_MODE == 'sandbox'
+    else 'https://api.fedapay.com/v1'
+)
+# Clé secrète du webhook (définie dans le dashboard FedaPay, onglet Webhooks).
+FEDAPAY_WEBHOOK_SECRET = os.getenv('FEDAPAY_WEBHOOK_SECRET', '')
+# Modes d'envoi sans redirection par opérateur béninois (documentés FedaPay).
+FEDAPAY_MODES_OPERATEURS = {
+    'mtn_momo': 'mtn_open',
+    'moov': 'moov',
+    'celtis': 'sbin',
+}

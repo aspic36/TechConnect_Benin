@@ -4,3 +4,4 @@ Django==4.2.29
 PyMySQL
 python-dotenv
 Pillow
+requests  # client API FedaPay (collecte & reversement Mobile Money)
