@@ -158,6 +158,14 @@ python3 manage.py shell
     - seed_demo : paiement escrow payé sur la mission m7 ; formulaire `PaiementForm` supprimé. Suite portée à **127 tests OK**.
     - Prochaine étape = P3 : webhook FedaPay signé + idempotence pour confirmation automatique.
 
+23. **P3 — Webhook FedaPay signé + idempotence (terminé)** :
+    - Modèle **`EvenementWebhook`** (`apps/paiements/`) : journal de réception (clé unique stable → **anti double-traitement**) — migration `0001_initial`, migration appliquée.
+    - Extension du provider : `verifier_webhook(corps, signature)` (schéma `t=<ts>,v1=<hmac sha256>`, anti-rejeu 5 min, `FEDAPAY_WEBHOOK_SECRET`).
+    - Endpoint `POST /paiements/webhook/` (`csrf_exempt`, aucune session) : vérifie la signature → `400` si invalide, traite l'événement atomiquement (journal + action dans la même transaction, échec = rollback + renvoi autorisé).
+    - `services.traiter_webhook(evenement)` : événements `transaction.approved` → `confirmer_paiement` (statut `paye` + notification prestataire) ; `transaction.declined/canceled/…` → `eclater_paiement` (`echec`) ; `payout.failed` → commission remise en `en_attente` + alerte staff ; événement inconnu ou transaction inconnue → journalisé et accepté (200, évite les renvois inutiles).
+    - Suite portée à **133 tests OK**. ⚠️ Config à terminer côté FedaPay : pointer le webhook du dashboard vers `/paiements/webhook/` et renseigner `FEDAPAY_WEBHOOK_SECRET` dans `.env`.
+    - Prochaine étape = P4 : retrait du flux de commission manuel (déjà automatique à la clôture).
+
 ## 🔲 RESTE À FAIRE (roadmap)
 
 **Logiciel (MVP)**

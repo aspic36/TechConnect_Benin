@@ -8,7 +8,14 @@ import time
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
 
+from apps.accounts.models import User
+from apps.demandes.models import Categorie, Demande
+from apps.propositions.models import Commission, Mission, Paiement, Proposition
+
+from .models import EvenementWebhook
 from .providers import get_provider
 from .providers.fedapay import (
     ErreurFedaPay,
@@ -18,6 +25,16 @@ from .providers.fedapay import (
 )
 
 BASE = 'https://sandbox-api.fedapay.com/v1'
+
+
+def _signer_webhook(corps, secret='wh_secret_test', horodatage=None):
+    """Signe un corps HTTP comme le ferait FedaPay (schéma t,v1 HMAC-SHA256)."""
+    if horodatage is None:
+        horodatage = str(int(time.time()))
+    empreinte = hmac.new(
+        secret.encode(), f'{horodatage}.{corps.decode()}'.encode(),
+        hashlib.sha256).hexdigest()
+    return f't={horodatage},v1={empreinte}'
 
 
 class _Reponse:
@@ -154,3 +171,94 @@ class FactoryTests(TestCase):
                 providers.initier_collecte(
                     montant=1, description='m', email='e', telephone='+2296',
                     callback_url='x', reference='r')
+
+
+@override_settings(FEDAPAY_SECRET_KEY='sk_sandbox_test',
+                   FEDAPAY_WEBHOOK_SECRET='wh_secret_test')
+class WebhookTests(TestCase):
+    """End-to-end du webhook : signature, traitement, idempotence."""
+
+    def setUp(self):
+        self.client_u = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+        self.presta = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+        User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        categorie = Categorie.objects.create(nom='Web', slug='web')
+        demande = Demande.objects.create(
+            client=self.client_u, categorie=categorie, titre='Site',
+            description='x', statut=Demande.Statut.EN_COURS)
+        proposition = Proposition.objects.create(
+            demande=demande, prestataire=self.presta,
+            prix=100000, delais_jours=10, statut=Proposition.Statut.ACCEPTEE)
+        mission = Mission.objects.create(
+            demande=demande, proposition=proposition,
+            client=self.client_u, prestataire=self.presta)
+        self.paiement = Paiement.objects.create(
+            mission=mission, montant=100000,
+            methode=Paiement.Methode.MTN_MOMO,
+            statut=Paiement.Statut.EN_COURS, reference_txn='501')
+        self.prestataire_id = self.presta.id
+
+    def _poster(self, evenement):
+        corps = json.dumps(evenement).encode()
+        return self.client.post(
+            reverse('paiements:webhook'), data=corps,
+            content_type='application/json',
+            HTTP_X_FEDAPAY_SIGNATURE=_signer_webhook(corps))
+
+    def test_webhook_approved_confirme_le_paiement(self):
+        reponse = self._poster({'name': 'transaction.approved',
+                                'transaction': {'id': 501, 'status': 'approved'}})
+        self.assertEqual(reponse.status_code, 200)
+        self.paiement.refresh_from_db()
+        self.assertEqual(self.paiement.statut, 'paye')
+        self.assertEqual(self.paiement.donnees_webhook['statut_fedapay'], 'approved')
+        self.assertTrue(EvenementWebhook.objects.filter(type='transaction.approved').exists())
+
+    def test_webhook_declined_echoue_le_paiement(self):
+        reponse = self._poster({'name': 'transaction.declined',
+                                'transaction': {'id': 501, 'status': 'declined'}})
+        self.assertEqual(reponse.status_code, 200)
+        self.paiement.refresh_from_db()
+        self.assertEqual(self.paiement.statut, 'echec')
+
+    def test_webhook_idempotent(self):
+        evenement = {'name': 'transaction.approved',
+                     'transaction': {'id': 501, 'status': 'approved'}}
+        self._poster(evenement)
+        reponse = self._poster(evenement)
+        self.assertEqual(reponse.json()['statut'], 'deja_traite')
+        self.assertEqual(EvenementWebhook.objects.count(), 1)
+
+    def test_webhook_signature_invalide_rejete(self):
+        corps = json.dumps({'name': 'transaction.approved',
+                            'transaction': {'id': 501}}).encode()
+        reponse = self.client.post(
+            reverse('paiements:webhook'), data=corps,
+            content_type='application/json',
+            HTTP_X_FEDAPAY_SIGNATURE='t=1,v1=nimporte')
+        self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(EvenementWebhook.objects.count(), 0)
+
+    def test_webhook_transaction_inconnue_accepte_sans_modification(self):
+        reponse = self._poster({'name': 'transaction.approved',
+                                'transaction': {'id': 999, 'status': 'approved'}})
+        self.assertEqual(reponse.status_code, 200)
+        self.paiement.refresh_from_db()
+        self.assertEqual(self.paiement.statut, 'en_cours')
+        self.assertEqual(EvenementWebhook.objects.count(), 1)
+
+    def test_webhook_payout_echoue_remet_la_commission_en_attente(self):
+        commission = Commission.objects.create(
+            mission=self.paiement.mission, montant=5000,
+            statut=Commission.Statut.PAYEE, reference_payout='pout_123',
+            date_limite=timezone.now() + timezone.timedelta(days=7))
+        reponse = self._poster({'name': 'payout.failed',
+                                'payout': {'id': 7, 'reference': 'pout_123',
+                                           'status': 'failed'}})
+        self.assertEqual(reponse.status_code, 200)
+        commission.refresh_from_db()
+        self.assertEqual(commission.statut, 'en_attente')

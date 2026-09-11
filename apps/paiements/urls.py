@@ -8,4 +8,5 @@ app_name = 'paiements'
 
 urlpatterns = [
     path('retour/', views.retour_paiement, name='retour'),
+    path('webhook/', views.webhook_fedapay, name='webhook'),
 ]

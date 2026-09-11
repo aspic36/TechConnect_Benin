@@ -7,14 +7,19 @@ règlement automatique de la commission (``COMMISSION_POURCENT`` %).
 """
 
 from django.conf import settings
+from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.notifications import creer_notification, notifier_staff
 from apps.propositions.models import Commission, Paiement
 
+from .models import EvenementWebhook
 from .providers import get_provider
 from .providers.fedapay import ErreurFedaPay, PaiementNonAutorise
+
+import hashlib
+import json
 
 
 def montant_commission(prix):
@@ -171,3 +176,95 @@ def reverser_prestataire(mission, commission):
         f'« {mission.demande.titre} » (commission {commission.montant} FCFA réglée).',
         'mission', reverse('propositions:detail_mission', args=[mission.pk]))
     return True
+
+
+# ---------------------------------------------------------------------------
+# Webhooks FedaPay (confirmation automatique des paiements)
+# ---------------------------------------------------------------------------
+
+def _entite_evenement(evenement):
+    """Entité concernée par un événement FedaPay (transaction ou payout)."""
+    return (evenement.get('entity') or evenement.get('transaction')
+            or evenement.get('payout') or {})
+
+
+def _cle_idempotence(evenement):
+    """Clé stable identifiant un événement (id d'entité sinon empreinte)."""
+    entite = _entite_evenement(evenement)
+    nom = evenement.get('name', '')
+    identifiant = entite.get('reference') or str(entite.get('id', ''))
+    if nom and identifiant:
+        return f'{nom}:{identifiant}'
+    corps = json.dumps(evenement, sort_keys=True).encode('utf-8')
+    return hashlib.sha256(corps).hexdigest()
+
+
+def _traiter_evenement_transaction(entite, nom):
+    """Confirme ou annule le paiement correspondant à la transaction."""
+    reference_ou_id = entite.get('reference') or str(entite.get('id', ''))
+    if not reference_ou_id:
+        return
+    if str(entite.get('id', '')).isdigit():
+        paiement = Paiement.objects.filter(
+            reference_txn=str(entite.get('id'))).first()
+        if paiement is None and reference_ou_id != str(entite.get('id')):
+            paiement = Paiement.objects.filter(
+                donnees_webhook__reference=reference_ou_id).first()
+    else:
+        paiement = Paiement.objects.filter(
+            donnees_webhook__reference=reference_ou_id).first()
+    if paiement is None:
+        return
+    donnees = dict(paiement.donnees_webhook or {})
+    donnees.update({'dernier_evenement': nom, 'statut_fedapay': entite.get('status')})
+    paiement.donnees_webhook = donnees
+    paiement.save(update_fields=['donnees_webhook'])
+    statut = entite.get('status') or nom.rsplit('.', 1)[-1]
+    if statut == 'approved':
+        confirmer_paiement(paiement)
+    elif statut in ('declined', 'canceled', 'cancelled', 'failed', 'expired'):
+        eclater_paiement(paiement)
+
+
+def _traiter_evenement_payout(entite, nom):
+    """Enregistre l'issue d'un reversement FedaPay sur la commission."""
+    reference = entite.get('reference') or str(entite.get('id', ''))
+    if not reference:
+        return
+    commission = Commission.objects.filter(reference_payout=reference).first()
+    if commission is None and str(entite.get('id', '')).isdigit():
+        commission = Commission.objects.filter(
+            reference_payout=str(entite.get('id'))).first()
+    if commission is None:
+        return
+    statut = entite.get('status') or nom.rsplit('.', 1)[-1]
+    if statut in ('failed', 'declined'):
+        commission.statut = Commission.Statut.EN_ATTENTE
+        commission.date_paiement = None
+        commission.save(update_fields=['statut', 'date_paiement'])
+        notifier_staff(
+            f'Le reversement FedaPay {reference} a échoué pour '
+            f'{commission.mission.prestataire.username} : commission à traiter '
+            'manuellement.',
+            'systeme', reverse('admin_panel:commissions'))
+
+
+def traiter_webhook(evenement):
+    """Traite un événement FedaPay de façon idempotente.
+
+    Retourne ``'deja_traite'`` si l'événement a déjà été reçu, ``'traite'``
+    sinon. L'écriture du journal et le traitement sont atomiques : un échec
+    annule tout, ce qui autorise le renvoi par FedaPay.
+    """
+    nom = evenement.get('name', '')
+    cle = _cle_idempotence(evenement)
+    with transaction.atomic():
+        if EvenementWebhook.objects.filter(reference=cle).exists():
+            return 'deja_traite'
+        if nom.startswith('transaction.'):
+            _traiter_evenement_transaction(_entite_evenement(evenement), nom)
+        elif nom.startswith('payout.'):
+            _traiter_evenement_payout(_entite_evenement(evenement), nom)
+        EvenementWebhook.objects.create(
+            reference=cle, type=nom, donnees=evenement)
+    return 'traite'
