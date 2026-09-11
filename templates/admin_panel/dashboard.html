@@ -22,6 +22,7 @@
     <a class="stat-link" href="{% url 'admin:propositions_mission_changelist' %}?statut=terminee"><div class="stat"><div class="stat-value" style="color: var(--success);">{{ missions_terminees }}</div><div class="stat-label">Missions terminées</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:litiges' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ commissions_en_attente }}</div><div class="stat-label">Commissions dues</div></div></a>
+    <a class="stat-link" href="{% url 'admin_panel:paiements' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ paiements_a_confirmer }}</div><div class="stat-label">Paiements à confirmer</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ commissions_en_retard }}</div><div class="stat-label">Commissions en retard</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:abonnements' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ abonnements_a_confirmer }}</div><div class="stat-label">Abonnements à confirmer</div></div></a>
 </div>
@@ -63,6 +64,17 @@
         et attendent ta confirmation.</p>
     <div class="actions">
         <a class="btn btn-accent" href="{% url 'admin_panel:commissions' %}">Confirmer les règlements</a>
+    </div>
+</div>
+{% endif %}
+
+{% if paiements_a_confirmer %}
+<div class="card" style="border-color: #c7d2fe;">
+    <h3 class="card-title">💳 Paiements à confirmer</h3>
+    <p class="card-text">{{ paiements_a_confirmer }} paiement(s) (virement ou Mobile Money hors
+        FedaPay) attendent une confirmation avant la clôture de la mission.</p>
+    <div class="actions">
+        <a class="btn btn-accent" href="{% url 'admin_panel:paiements' %}">Confirmer les paiements</a>
     </div>
 </div>
 {% endif %}

@@ -55,10 +55,21 @@
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
         <h3 class="card-title">💳 Paiements</h3>
-        {% if mission.client == user %}
-            <a class="btn btn-outline btn-sm" href="{% url 'propositions:paiement' mission.pk %}">+ Enregistrer un paiement</a>
+        {% if mission.client == user and mission.statut == 'en_cours' %}
+            {% if not mission_payee %}
+                <div class="actions">
+                    <a class="btn btn-accent btn-sm" href="{% url 'propositions:paiement' mission.pk %}">💳 Payer (reste {{ reste_a_payer }} FCFA)</a>
+                    <a class="btn btn-outline btn-sm" href="{% url 'propositions:verifier_paiement' mission.pk %}">↻ Vérifier le paiement</a>
+                </div>
+            {% else %}
+                <span class="tag emerald">✓ Mission réglée</span>
+            {% endif %}
         {% endif %}
     </div>
+    <p class="card-meta" style="margin-top: 0.3rem;">
+        Le prix est payé à l'avance et bloqué en sécurité (escrow). Le solde
+        (95% du prix) sera reversé au prestataire à la clôture.
+    </p>
     {% for paiement in mission.paiements.all %}
         <div style="display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border);">
             <span class="tag emerald">💰 {{ paiement.montant }} FCFA</span>
@@ -79,16 +90,20 @@
         {% if mission.commission.en_retard %}<span class="badge litige">En retard</span>{% endif %}
     </p>
     <p class="card-meta">
-        Due par le prestataire avant le {{ mission.commission.date_limite|date:'d/m/Y H:i' }}
-        {% if mission.commission.date_paiement %} · Réglée le {{ mission.commission.date_paiement|date:'d/m/Y' }}{% endif %}
+        Retenue sur le reversement FedaPay du prestataire à la clôture
+        {% if mission.commission.date_paiement %} · Réglée le {{ mission.commission.date_paiement|date:'d/m/Y' }}
+        {% elif mission.commission.en_attente %} · à confirmer par l'équipe avant le {{ mission.commission.date_limite|date:'d/m/Y H:i' }}{% endif %}
     </p>
 </div>
 {% endif %}
 
 <div class="actions" style="margin-top: 1.2rem;">
     <a class="btn btn-lg" href="{% url 'messagerie:fil' mission.pk %}">💬 Ouvrir la messagerie</a>
-    {% if mission.statut == 'en_cours' %}
+    {% if mission.statut == 'en_cours' and mission_payee %}
         <a class="btn btn-success" href="{% url 'propositions:clore' mission.pk %}">✓ Clôturer la mission</a>
+    {% elif mission.statut == 'en_cours' and not mission_payee and mission.client == user %}
+        <span class="card-meta">🔒 Clôture possible une fois le paiement confirmé
+            (reste {{ reste_a_payer }} FCFA)</span>
     {% endif %}
     {% if mission.statut == 'terminee' %}
         <a class="btn btn-accent" href="{% url 'propositions:evaluer' mission.pk %}">★ Évaluer la mission</a>

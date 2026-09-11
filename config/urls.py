@@ -33,6 +33,8 @@ urlpatterns = [
     path('messagerie/', include('apps.messagerie.urls')),
     # Back-office : stats, vérification prestataires, modération
     path('back-office/', include('apps.admin_panel.urls')),
+    # Paiements (callback FedaPay)
+    path('paiements/', include('apps.paiements.urls')),
 ]
 
 # En mode développement, Django sert les fichiers médias (uploads)

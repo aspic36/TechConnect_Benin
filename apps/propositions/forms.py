@@ -36,14 +36,6 @@ class EvaluationForm(forms.ModelForm):
         }
 
 
-class PaiementForm(forms.ModelForm):
-    """Formulaire d'enregistrement d'un paiement par le client (montant + méthode)."""
-
-    class Meta:
-        model = Paiement
-        fields = ('montant', 'methode')
-
-
 class ReglementCommissionForm(forms.ModelForm):
     """Formulaire de déclaration de règlement de la commission par le prestataire.
 

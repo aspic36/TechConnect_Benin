@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Retour de paiement{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <h2 style="margin: 0;">💳 Merci pour ton paiement !</h2>
+    <p>Nous vérifions la confirmation à l'instant.</p>
+</div>
+
+<div class="card">
+    <p class="card-text">Ton paiement est en cours de vérification auprès de l'opérateur.
+        Une fois confirmé, le prestataire sera prévenu et le solde (95% du prix) lui sera
+        reversé automatiquement à la clôture de la mission.</p>
+    <p class="card-meta">Si la confirmation n'apparaît pas sur la page de la mission, utilise
+        le bouton « Vérifier le paiement » après quelques instants.</p>
+    <div class="actions">
+        <a class="btn btn-lg" href="{% url 'propositions:liste_missions' %}">Mes missions</a>
+    </div>
+</div>
+{% endblock %}

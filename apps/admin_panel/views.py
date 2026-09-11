@@ -18,7 +18,8 @@ from django.utils import timezone
 from apps.accounts.models import Abonnement, Notification, User
 from apps.accounts.notifications import creer_notification
 from apps.demandes.models import Demande
-from apps.propositions.models import Commission, Mission
+from apps.paiements.services import confirmer_paiement as confirmer_paiement_service
+from apps.propositions.models import Commission, Mission, Paiement
 
 
 @staff_member_required
@@ -45,6 +46,9 @@ def dashboard(request):
         ).count(),
         'commissions_a_confirmer': Commission.objects.filter(
             statut=Commission.Statut.EN_ATTENTE, date_declaration__isnull=False
+        ).count(),
+        'paiements_a_confirmer': Paiement.objects.filter(
+            statut=Paiement.Statut.EN_ATTENTE
         ).count(),
         'abonnements_a_confirmer': Abonnement.objects.filter(
             statut=Abonnement.Statut.EN_ATTENTE
@@ -226,6 +230,35 @@ def reactiver_prestataire(request, pk):
     prestataire.save()
     messages.success(request, f'{prestataire.username} est réactivé.')
     return redirect('admin_panel:prestataires')
+
+
+@staff_member_required
+def liste_paiements(request):
+    """Liste les paiements des missions, les en attente de confirmation d'abord."""
+    paiements = Paiement.objects.select_related(
+        'mission__demande', 'mission__client', 'mission__prestataire'
+    ).order_by('statut', '-date_creation')
+    a_confirmer = Paiement.objects.filter(statut=Paiement.Statut.EN_ATTENTE).count()
+    return render(request, 'admin_panel/paiements.html', {
+        'paiements': paiements,
+        'a_confirmer': a_confirmer,
+    })
+
+
+@staff_member_required
+def confirmer_paiement(request, pk):
+    """Confirme un paiement en attente (virement bancaire ou repli local)."""
+    paiement = get_object_or_404(Paiement, pk=pk)
+    if paiement.statut == Paiement.Statut.EN_ATTENTE:
+        confirmer_paiement_service(paiement)
+        messages.success(
+            request,
+            f'Paiement de {paiement.montant} FCFA confirmé pour '
+            f'« {paiement.mission.demande.titre} ».',
+        )
+    else:
+        messages.info(request, 'Ce paiement a déjà été traité.')
+    return redirect('admin_panel:paiements')
 
 
 @staff_member_required

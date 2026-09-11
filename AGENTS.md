@@ -150,6 +150,14 @@ python3 manage.py shell
     - seed_demo : commission calculée via `settings.COMMISSION_POURCENT`. Suite toujours à **118 tests OK**.
     - Prochaine étape = P2 : flux escrow (initier_paiement remplace enregistrer_paiement, clore bloque si impayé, payout 95 % → commission payée automatiquement).
 
+22. **P2 — Flux escrow complet (paiement à l'avance, terminé)** :
+    - **`apps/paiements/services.py`** : `prix_a_payer`, `mission_payee`, `initier_collecte_mission` (collecte FedaPay → `payment_url`, ou virement/repli local en `en_attente`), `confirmer_paiement`/`eclater_paiement` (statuts via vérification), `reverser_prestataire` (payout 95 % → `Commission` payée auto avec `reference_payout` ; repli manuel si reversement indisponible).
+    - Vue `initier_paiement` (remplace `enregistrer_paiement`) : choix opérateur (MTN/Moov/Celtis/Virement), redirection vers la page de paiement FedaPay ; vue `verifier_paiement` (interroge FedaPay, `approved` → `paye`, `failed` → `echec`) ; page de retour `paiements/retour/` (app `apps/paiements/urls.py`).
+    - **Clôture bloquée** si mission non réglée ; à la clôture : reversement du solde + commission payée automatiquement (message à l'équipe si reversement impossible).
+    - **Back-office** : page `paiements/` + confirmation des paiements `en_attente` (virement/repli) → `paye` + notification prestataire ; carte dashboard « Paiements à confirmer ».
+    - seed_demo : paiement escrow payé sur la mission m7 ; formulaire `PaiementForm` supprimé. Suite portée à **127 tests OK**.
+    - Prochaine étape = P3 : webhook FedaPay signé + idempotence pour confirmation automatique.
+
 ## 🔲 RESTE À FAIRE (roadmap)
 
 **Logiciel (MVP)**

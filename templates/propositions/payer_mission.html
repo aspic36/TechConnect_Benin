@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Payer la mission — {{ mission.demande.titre }}{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <h2 style="margin: 0;">💳 Paiement de la mission</h2>
+    <p>{{ mission.demande.titre }}</p>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Montant à régler</h3>
+    <p class="card-text">
+        <span class="tag emerald">💰 {{ reste }} FCFA</span>
+        <span class="card-meta">— prix convenu avec {{ mission.prestataire.username }}, réglé
+            à l'avance et bloqué en sécurité (escrow) jusqu'à la clôture de la mission.</span>
+    </p>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Choisis ton moyen de paiement</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="grid">
+            <label class="card plan-card" style="cursor: pointer;">
+                <input type="radio" name="methode" value="{{ methodes.MTN_MOMO }}" required checked>
+                <span class="card-title" style="margin: 0;">📱 MTN Mobile Money</span>
+                <span class="card-meta">Paiement sécurisé FedaPay</span>
+            </label>
+            <label class="card plan-card" style="cursor: pointer;">
+                <input type="radio" name="methode" value="{{ methodes.MOOV }}">
+                <span class="card-title" style="margin: 0;">📱 Moov Money</span>
+                <span class="card-meta">Paiement sécurisé FedaPay</span>
+            </label>
+            <label class="card plan-card" style="cursor: pointer;">
+                <input type="radio" name="methode" value="{{ methodes.CELTIS }}">
+                <span class="card-title" style="margin: 0;">📱 Celtiis Cash</span>
+                <span class="card-meta">Paiement sécurisé FedaPay</span>
+            </label>
+            <label class="card plan-card" style="cursor: pointer;">
+                <input type="radio" name="methode" value="{{ methodes.VIREMENT }}">
+                <span class="card-title" style="margin: 0;">🏦 Virement bancaire</span>
+                <span class="card-meta">Confirmation manuelle par l'équipe</span>
+            </label>
+        </div>
+        <div class="actions" style="margin-top: 1rem;">
+            <button class="btn btn-lg" type="submit" style="width: 100%;">💳 Payer {{ reste }} FCFA</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <p class="card-meta" style="margin: 0;">
+        🔒 La commission de la plateforme (5%) est retenue sur le reversement au prestataire
+        à la clôture ; 95% du prix te seront versés automatiquement.
+    </p>
+</div>
+{% endblock %}

@@ -22,7 +22,7 @@ from django.utils import timezone
 from apps.accounts.models import Abonnement, User
 from apps.demandes.models import Categorie, Demande
 from apps.messagerie.models import Message
-from apps.propositions.models import Commission, Evaluation, Mission, Proposition
+from apps.propositions.models import Commission, Evaluation, Mission, Paiement, Proposition
 
 # Mot de passe unique pour tous les comptes de demonstration
 MOT_DE_PASSE = 'Demo@2026!'
@@ -245,7 +245,17 @@ class Command(BaseCommand):
         )
         self.stdout.write('Évaluations de démo créées.')
 
-        # --- 10. Commission plateforme (COMMISSION_POURCENT % de la mission clôturée m7) ---
+        # --- 10. Paiement escrow (mission m7 réglée à l'avance) ---
+        Paiement.objects.create(
+            mission=m7,
+            montant=p7a.prix,
+            methode=Paiement.Methode.MTN_MOMO,
+            statut=Paiement.Statut.PAYE,
+            reference_txn='trx_demo_m7',
+        )
+        self.stdout.write('Paiement escrow de démo créé.')
+
+        # --- 11. Commission plateforme (COMMISSION_POURCENT % de la mission clôturée m7) ---
         # Montant : 5% de 100000 FCFA = 5000 FCFA, à régler sous 7 jours.
         Commission.objects.create(
             mission=m7,
@@ -255,7 +265,7 @@ class Command(BaseCommand):
         )
         self.stdout.write('Commission de démo créée.')
 
-        # --- 11. Notifications de démo (cloche) ---
+        # --- 12. Notifications de démo (cloche) ---
         from apps.accounts.models import Notification
         Notification.objects.create(
             destinataire=nassirou,
@@ -265,7 +275,7 @@ class Command(BaseCommand):
         )
         self.stdout.write('Notification de démo créée.')
 
-        # --- 12. Message de succes ---
+        # --- 13. Message de succes ---
         self.stdout.write(self.style.SUCCESS(
             'Données de démo prêtes ! Comptes (mot de passe "Demo@2026!") : '
             'amina (client), codjo (client), yves (prestataire, plan Pro), '

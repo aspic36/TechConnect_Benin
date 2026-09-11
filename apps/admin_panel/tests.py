@@ -253,3 +253,51 @@ class AbonnementBackOfficeTests(TestCase):
         self.client.get(reverse('admin_panel:confirmer_commission', args=[commission.pk]))
         notification = Notification.objects.get(destinataire=self.presta)
         self.assertEqual(notification.type, 'commission')
+
+
+class ConfirmationPaiementTests(TestCase):
+    """Confirmation back-office des paiements locaux (virement / repli)."""
+
+    def setUp(self):
+        from apps.demandes.models import Categorie
+        from apps.propositions.models import Mission, Paiement, Proposition
+        self.staff = User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        self.client_u = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+        self.presta = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+        categorie = Categorie.objects.create(nom='Web', slug='web')
+        demande = Demande.objects.create(
+            client=self.client_u, categorie=categorie, titre='Site',
+            description='x', statut=Demande.Statut.EN_COURS)
+        proposition = Proposition.objects.create(
+            demande=demande, prestataire=self.presta,
+            prix=100000, delais_jours=10, statut=Proposition.Statut.ACCEPTEE)
+        mission = Mission.objects.create(
+            demande=demande, proposition=proposition,
+            client=self.client_u, prestataire=self.presta)
+        self.paiement = Paiement.objects.create(
+            mission=mission, montant=100000,
+            methode=Paiement.Methode.VIREMENT,
+            statut=Paiement.Statut.EN_ATTENTE)
+
+    def test_confirmer_paiement_marque_paye_et_notifie(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:confirmer_paiement', args=[self.paiement.pk]))
+        self.paiement.refresh_from_db()
+        self.assertEqual(self.paiement.statut, 'paye')
+        notification = Notification.objects.get(destinataire=self.presta)
+        self.assertEqual(notification.type, 'mission')
+
+    def test_liste_paiements_compte_les_attentes(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:paiements'))
+        self.assertEqual(reponse.context['a_confirmer'], 1)
+        self.assertEqual(len(reponse.context['paiements']), 1)
+
+    def test_dashboard_compte_les_paiements_a_confirmer(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:dashboard'))
+        self.assertEqual(reponse.context['paiements_a_confirmer'], 1)

@@ -1,9 +1,12 @@
-from django.test import TestCase
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import Notification, User
 from apps.demandes.models import Categorie, Demande
+from apps.paiements.providers.base import ResultatCollecte, ResultatReversement
 
 from .models import Commission, Evaluation, Mission, Paiement, Proposition
 
@@ -42,6 +45,16 @@ class BaseTests(TestCase):
             prestataire=self.presta,
         )
         return mission
+
+    def _payer(self, mission, statut=Paiement.Statut.PAYE,
+               methode=Paiement.Methode.MTN_MOMO):
+        """Marque la mission comme réglée (prix complet, par défaut payé)."""
+        return Paiement.objects.create(
+            mission=mission,
+            montant=mission.proposition.prix,
+            methode=methode,
+            statut=statut,
+        )
 
 
 class SoumissionTests(BaseTests):
@@ -178,6 +191,7 @@ class AcceptationTests(BaseTests):
         self.assertEqual(proposition.statut, Proposition.Statut.REFUSEE)
 
 
+@override_settings(FEDAPAY_SECRET_KEY='', FEDAPAY_BASE_URL='')
 class MissionTests(BaseTests):
 
     def test_liste_missions_reservee_aux_participants(self):
@@ -194,6 +208,7 @@ class MissionTests(BaseTests):
 
     def test_clore_termine_mission_et_demande(self):
         mission = self._mission()
+        self._payer(mission)
         self.client.login(username='client', password='Passw0rd!')
         self.client.get(reverse('propositions:clore', args=[mission.pk]))
         mission.refresh_from_db()
@@ -202,6 +217,7 @@ class MissionTests(BaseTests):
         self.assertEqual(self.demande.statut, Demande.Statut.CLOTUREE)
 
 
+@override_settings(FEDAPAY_SECRET_KEY='', FEDAPAY_BASE_URL='')
 class EvaluationTests(BaseTests):
 
     def test_evaluation_impossible_avant_terminaison(self):
@@ -215,6 +231,7 @@ class EvaluationTests(BaseTests):
 
     def test_evaluation_apres_terminaison(self):
         mission = self._mission()
+        self._payer(mission)
         self.client.login(username='client', password='Passw0rd!')
         self.client.get(reverse('propositions:clore', args=[mission.pk]))
         self.client.post(
@@ -254,40 +271,131 @@ class PaiementTests(BaseTests):
         )
         self.assertEqual(mission.paiements.count(), 0)
 
-    def test_enregistrer_un_paiement(self):
+    def test_enregistrer_virement_en_attente(self):
         mission = self._mission()
         self.client.login(username='client', password='Passw0rd!')
         self.client.post(
             reverse('propositions:paiement', args=[mission.pk]),
-            {'montant': 100000, 'methode': 'mtn_momo'},
+            {'methode': 'virement'},
         )
         paiement = mission.paiements.get()
         self.assertEqual(paiement.montant, 100000)
+        self.assertEqual(paiement.methode, Paiement.Methode.VIREMENT)
+        self.assertEqual(paiement.statut, Paiement.Statut.EN_ATTENTE)
+
+    @override_settings(FEDAPAY_SECRET_KEY='', FEDAPAY_BASE_URL='')
+    def test_mobile_sans_fedapay_repli_local(self):
+        mission = self._mission()
+        self.client.login(username='client', password='Passw0rd!')
+        self.client.post(
+            reverse('propositions:paiement', args=[mission.pk]),
+            {'methode': 'mtn_momo'},
+        )
+        paiement = mission.paiements.get()
         self.assertEqual(paiement.methode, Paiement.Methode.MTN_MOMO)
+        self.assertEqual(paiement.statut, Paiement.Statut.EN_ATTENTE)
+
+    def test_mobile_avec_fedapay_redirige_vers_la_page_de_paiement(self):
+        mission = self._mission()
+        url = 'https://sandbox-process.fedapay.com/jeton'
+        class _Fake:
+            def initier_collecte(self, **kwargs):
+                return ResultatCollecte('77', 'trx_abc', url, 'pending')
+        with patch('apps.paiements.services.get_provider', return_value=_Fake()):
+            self.client.login(username='client', password='Passw0rd!')
+            reponse = self.client.post(
+                reverse('propositions:paiement', args=[mission.pk]),
+                {'methode': 'mtn_momo'},
+            )
+        self.assertEqual(reponse.status_code, 302)
+        self.assertEqual(reponse.url, url)
+        paiement = mission.paiements.get()
+        self.assertEqual(paiement.reference_txn, '77')
         self.assertEqual(paiement.statut, Paiement.Statut.EN_COURS)
 
+    def test_verifier_paiement_confirme_en_approved(self):
+        mission = self._mission()
+        self._payer(mission, statut=Paiement.Statut.EN_COURS, methode=Paiement.Methode.MOOV)
+        mission.paiements.update(reference_txn='42')
+        class _Fake:
+            def verifier_transaction(self, transaction_id):
+                return 'approved'
+        with patch('apps.paiements.services.get_provider', return_value=_Fake()):
+            self.client.login(username='client', password='Passw0rd!')
+            reponse = self.client.get(
+                reverse('propositions:verifier_paiement', args=[mission.pk]))
+        self.assertRedirects(reponse, reverse('propositions:detail_mission', args=[mission.pk]))
+        mission.paiements.get().refresh_from_db()
+        self.assertEqual(mission.paiements.get().statut, Paiement.Statut.PAYE)
+        self.assertTrue(Notification.objects.filter(
+            destinataire=self.presta, type='mission').exists())
 
+    def test_verifier_paiement_echec_sur_refus(self):
+        mission = self._mission()
+        self._payer(mission, statut=Paiement.Statut.EN_COURS, methode=Paiement.Methode.CELTIS)
+        mission.paiements.update(reference_txn='43')
+        class _Fake:
+            def verifier_transaction(self, transaction_id):
+                return 'failed'
+        with patch('apps.paiements.services.get_provider', return_value=_Fake()):
+            self.client.login(username='client', password='Passw0rd!')
+            self.client.get(reverse('propositions:verifier_paiement', args=[mission.pk]))
+        self.assertEqual(mission.paiements.get().statut, Paiement.Statut.ECHEC)
+
+
+@override_settings(FEDAPAY_SECRET_KEY='', FEDAPAY_BASE_URL='')
 class CommissionTests(BaseTests):
 
     def test_clore_mission_cree_commission_du_pourcentage_configure(self):
         from django.conf import settings
         mission = self._mission()
+        self._payer(mission)
         self.client.login(username='client', password='Passw0rd!')
         self.client.get(reverse('propositions:clore', args=[mission.pk]))
         commission = Commission.objects.get(mission=mission)
         # Pourcentage configuré appliqué au prix de la proposition acceptée.
         self.assertEqual(commission.montant,
                          mission.proposition.prix * settings.COMMISSION_POURCENT // 100)
+        # Sans clés FedaPay ni reversement disponible, la commission reste due.
         self.assertEqual(commission.statut, Commission.Statut.EN_ATTENTE)
         delai = (commission.date_limite - mission.date_creation).days
         self.assertEqual(delai, settings.COMMISSION_DELAI_JOURS)
 
+    def test_clore_mission_bloque_sans_paiement(self):
+        mission = self._mission()
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('propositions:clore', args=[mission.pk]))
+        self.assertRedirects(reponse, reverse('propositions:detail_mission', args=[mission.pk]))
+        mission.refresh_from_db()
+        self.assertEqual(mission.statut, Mission.Statut.EN_COURS)
+        self.assertFalse(Commission.objects.filter(mission=mission).exists())
+
     def test_clore_mission_ne_cree_pas_de_double_commission(self):
         mission = self._mission()
+        self._payer(mission)
         self.client.login(username='client', password='Passw0rd!')
         self.client.get(reverse('propositions:clore', args=[mission.pk]))
         self.client.get(reverse('propositions:clore', args=[mission.pk]))
         self.assertEqual(Commission.objects.filter(mission=mission).count(), 1)
+
+    def test_clore_reverse_et_paye_la_commission_automatiquement(self):
+        mission = self._mission()
+        self._payer(mission)
+        class _Fake:
+            def initier_reversement(self, **kwargs):
+                return ResultatReversement('8', 'pout_demo', 'pending')
+            def envoyer_reversement(self, payout_id, telephone=None):
+                return 'sent'
+        with patch('apps.paiements.services.get_provider', return_value=_Fake()):
+            self.client.login(username='client', password='Passw0rd!')
+            self.client.get(reverse('propositions:clore', args=[mission.pk]))
+        commission = Commission.objects.get(mission=mission)
+        self.assertEqual(commission.statut, Commission.Statut.PAYEE)
+        self.assertEqual(commission.reference_payout, 'pout_demo')
+        self.assertIsNotNone(commission.date_paiement)
+        self.assertTrue(Notification.objects.filter(
+            destinataire=self.presta, type='mission',
+            message__contains='Reversement').exists())
 
     def test_mes_commissions_reservees_aux_prestataires(self):
         mission = self._mission()

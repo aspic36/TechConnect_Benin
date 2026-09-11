@@ -18,8 +18,10 @@ from django.utils import timezone
 from apps.accounts.models import Notification
 from apps.accounts.notifications import creer_notification, notifier_staff
 from apps.demandes.models import Demande
+from apps.paiements import services
+from apps.paiements.providers.fedapay import ErreurFedaPay, PaiementNonAutorise
 
-from .forms import EvaluationForm, PaiementForm, PropositionForm, ReglementCommissionForm
+from .forms import EvaluationForm, PropositionForm, ReglementCommissionForm
 from .models import Commission, Evaluation, Mission, Paiement, Proposition
 
 
@@ -145,44 +147,61 @@ def liste_missions(request):
 
 @login_required
 def detail_mission(request, pk):
-    """Affiche le détail d'une mission, réservé aux deux parties concernées."""
+    """Affiche le détail d'une mission, réservé aux deux parties prenantes."""
     mission = get_object_or_404(Mission, pk=pk)
     # Restriction : seuls le client et le prestataire de la mission y accèdent.
     if request.user not in (mission.client, mission.prestataire):
         messages.error(request, 'Tu ne participes pas à cette mission.')
         return redirect('propositions:liste_missions')
-    return render(request, 'propositions/detail_mission.html', {'mission': mission})
+    return render(request, 'propositions/detail_mission.html', {
+        'mission': mission,
+        'reste_a_payer': services.prix_a_payer(mission),
+        'mission_payee': services.mission_payee(mission),
+    })
 
 
 @login_required
 def clore_mission(request, pk):
-    """Clôture une mission : passe la mission et sa demande en statut terminal."""
+    """Clôture une mission : blocage tant que le paiement n'est pas confirmé,
+    reversement du solde au prestataire et règlement auto de la commission."""
     mission = get_object_or_404(Mission, pk=pk)
     # Seules les deux parties de la mission peuvent la clôturer.
     if request.user not in (mission.client, mission.prestataire):
         messages.error(request, 'Action impossible.')
         return redirect('propositions:liste_missions')
+    # Escrow : la clôture exige que le prix soit intégralement réglé.
+    if mission.statut == Mission.Statut.EN_COURS and not services.mission_payee(mission):
+        reste = services.prix_a_payer(mission)
+        messages.error(
+            request,
+            f'Le paiement de la mission n’est pas encore confirmé '
+            f'(reste {reste} FCFA). Le client doit régler avant la clôture.',
+        )
+        return redirect('propositions:detail_mission', pk=mission.pk)
     mission.statut = Mission.Statut.TERMINEE
     mission.save()
     # La demande associée est clôturée en même temps que la mission.
     mission.demande.statut = Demande.Statut.CLOTUREE
     mission.demande.save()
-    # La clôture déclenche la création de la commission de la plateforme
-    # (COMMISSION_POURCENT % du prix) retenue sur le reversement du prestataire.
-    # Idempotent : la commission n'est créée qu'une seule fois par mission.
+    # La clôture déclenche le reversement du solde au prestataire : la
+    # commission (COMMISSION_POURCENT %) est réglée automatiquement sur ce
+    # reversement. Idempotent : la commission n'est créée qu'une seule fois.
     if not hasattr(mission, 'commission'):
-        commission_pourcent = settings.COMMISSION_POURCENT
-        montant = mission.proposition.prix * commission_pourcent // 100
-        Commission.objects.create(
-            mission=mission,
-            montant=montant,
-            date_limite=timezone.now() + timedelta(days=settings.COMMISSION_DELAI_JOURS),
-        )
-        messages.info(
-            request,
-            f'Commission plateforme : {montant} FCFA ({commission_pourcent}%) à régler '
-            f'sous {settings.COMMISSION_DELAI_JOURS} jours.',
-        )
+        commission, _ = services.creer_commission_si_absente(mission)
+        reversement_ok = services.reverser_prestataire(mission, commission)
+        if reversement_ok:
+            messages.info(
+                request,
+                f'Solde de {mission.proposition.prix - commission.montant} FCFA '
+                f'reversé au prestataire ; commission plateforme '
+                f'({commission.montant} FCFA) réglée automatiquement.',
+            )
+        else:
+            messages.warning(
+                request,
+                'Le reversement automatique est momentanément indisponible : '
+                'une commission de clôture a été créée et sera réglée par l’équipe.',
+            )
     messages.success(request, 'Mission clôturée. Merci !')
     return redirect('propositions:detail_mission', pk=mission.pk)
 
@@ -265,24 +284,86 @@ def evaluer_mission(request, pk):
 
 
 @login_required
-def enregistrer_paiement(request, pk):
-    """Enregistre un paiement sur une mission (accord direct, seul le client)."""
+def initier_paiement(request, pk):
+    """Lance la collecte escrow du prix de la mission (paiement à l'avance).
+
+    Le client choisit son opérateur Mobile Money : la transaction est créée
+    chez FedaPay et il est redirigé vers la page de paiement sécurisée.
+    Le virement bancaire (repli) reste un enregistrement en attente de
+    confirmation par l'équipe.
+    """
     mission = get_object_or_404(Mission, pk=pk)
-    # Seul le client de la mission peut enregistrer un paiement (accord direct MVP).
+    # Seul le client de la mission peut initier le paiement.
     if request.user != mission.client:
-        messages.error(request, 'Seul le client peut enregistrer un paiement.')
+        messages.error(request, 'Seul le client peut payer la mission.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    reste = services.prix_a_payer(mission)
+    if reste <= 0:
+        messages.info(request, 'Cette mission est déjà intégralement réglée.')
         return redirect('propositions:detail_mission', pk=mission.pk)
     if request.method == 'POST':
-        form = PaiementForm(request.POST)
-        if form.is_valid():
-            paiement = form.save(commit=False)
-            # Rattache le paiement à la mission courante.
-            paiement.mission = mission
-            paiement.save()
-            messages.success(request, 'Paiement enregistré.')
+        methode = request.POST.get('methode', '')
+        if methode not in Paiement.Methode.values:
+            messages.error(request, 'Moyen de paiement invalide.')
             return redirect('propositions:detail_mission', pk=mission.pk)
+        try:
+            paiement, url = services.initier_collecte_mission(
+                mission, request.user, methode,
+                callback_url=request.build_absolute_uri(reverse('paiements:retour')),
+                reference=f'M{mission.pk}-{timezone.now():%Y%m%d%H%M%S}',
+            )
+        except (ErreurFedaPay, PaiementNonAutorise):
+            messages.error(
+                request,
+                'Le service de paiement est momentanément indisponible. '
+                'Réessaie dans quelques instants.',
+            )
+            return redirect('propositions:detail_mission', pk=mission.pk)
+        if url:
+            messages.info(request, 'Tu es redirigé vers le paiement sécurisé FedaPay.')
+            return redirect(url)
+        messages.info(
+            request,
+            'Ton paiement est enregistré : il sera confirmé par l’équipe '
+            'avant la clôture de la mission.',
+        )
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    return render(request, 'propositions/payer_mission.html', {
+        'mission': mission,
+        'reste': reste,
+        'methodes': Paiement.Methode,
+    })
+
+
+@login_required
+def verifier_paiement(request, pk):
+    """Interroge FedaPay et confirme les paiements passés en ``approved``."""
+    mission = get_object_or_404(Mission, pk=pk)
+    if request.user != mission.client:
+        messages.error(request, 'Seul le client peut vérifier le paiement.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    if services.mission_payee(mission):
+        messages.info(request, 'Cette mission est déjà intégralement réglée.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    en_cours = mission.paiements.filter(
+        statut=Paiement.Statut.EN_COURS,
+    ).exclude(reference_txn='').exclude(reference_txn__isnull=True)
+    if not en_cours:
+        messages.warning(request, 'Aucun paiement en cours à vérifier.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    confirme = 0
+    for paiement in en_cours:
+        try:
+            statut_fedapay = services.get_provider().verifier_transaction(paiement.reference_txn)
+        except ErreurFedaPay:
+            continue
+        if statut_fedapay == 'approved':
+            services.confirmer_paiement(paiement)
+            confirme += 1
+        elif statut_fedapay in ('failed', 'cancelled'):
+            services.eclater_paiement(paiement)
+    if confirme:
+        messages.success(request, f'{confirme} paiement(s) confirmé(s). Le prestataire est prévenu.')
     else:
-        # Pré-remplit le montant avec le prix de la proposition acceptée si disponible.
-        initial = {'montant': mission.proposition.prix} if mission.proposition else {}
-        form = PaiementForm(initial=initial)
-    return render(request, 'propositions/enregistrer_paiement.html', {'form': form, 'mission': mission})
+        messages.info(request, 'Les paiements sont toujours en attente de confirmation.')
+    return redirect('propositions:detail_mission', pk=mission.pk)

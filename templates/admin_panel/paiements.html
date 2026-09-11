@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Paiements — Back-office{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;">
+        <h2 style="margin: 0;">Paiements des missions</h2>
+        <span class="badge en_attente">{{ a_confirmer }} à confirmer</span>
+    </div>
+    <p>Escrow : le client règle à l'avance. Les paiements en attente (virement bancaire
+        ou repli local) doivent être confirmés par l'équipe avant la clôture.</p>
+</div>
+
+{% if paiements %}
+    {% for p in paiements %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                <div>
+                    <h3 class="card-title" style="margin: 0;">{{ p.mission.demande.titre }}</h3>
+                    <p class="card-meta">
+                        Client : {{ p.mission.client.username }} · Prestataire : {{ p.mission.prestataire.username }}
+                    </p>
+                    <p class="card-meta">
+                        <span class="tag emerald">💰 {{ p.montant }} FCFA</span>
+                        · {{ p.get_methode_display }}
+                        · Statut : <span class="badge {{ p.statut }}">{{ p.get_statut_display }}</span>
+                    </p>
+                    <p class="card-meta">
+                        {{ p.date_creation|date:'d/m/Y H:i' }}
+                        {% if p.reference_txn %} · FedaPay : {{ p.reference_txn }}{% endif %}
+                    </p>
+                </div>
+                {% if p.statut == 'en_attente' %}
+                    <a class="btn btn-success btn-sm" href="{% url 'admin_panel:confirmer_paiement' p.pk %}">✓ Confirmer le paiement</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="empty">
+        <div class="big">💳</div>
+        <p>Aucun paiement enregistré.</p>
+    </div>
+{% endif %}
+{% endblock %}
