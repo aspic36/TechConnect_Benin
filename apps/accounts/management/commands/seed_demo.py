@@ -75,16 +75,19 @@ class Command(BaseCommand):
         maintenant = timezone.now()
         amina = User.objects.create_user(
             username='amina', password=MOT_DE_PASSE, role=User.Role.CLIENT,
+            first_name='Amina', last_name='Dossou',
             phone='97 10 22 33', ville='Cotonou',
             company_name='', bio='Gérante d\'un salon de coiffure à Cotonou.',
         )
         codjo = User.objects.create_user(
             username='codjo', password=MOT_DE_PASSE, role=User.Role.CLIENT,
+            first_name='Codjo', last_name='Ahouansou',
             phone='95 44 55 66', ville='Porto-Novo',
             company_name='Association Espoir', bio='Secrétaire général de l\'association Espoir.',
         )
         yves = User.objects.create_user(
             username='yves', password=MOT_DE_PASSE, role=User.Role.PRESTATAIRE,
+            first_name='Yves', last_name='Kinhoun',
             phone='91 88 99 00', ville='Abomey-Calavi', company_name='Yves Tech Services',
             bio='Développeur web et mobile, 6 ans d\'expérience.', is_verified=True,
             plan=User.Plan.PRO, date_debut_plan=maintenant - timedelta(days=5),
@@ -92,11 +95,13 @@ class Command(BaseCommand):
         )
         farida = User.objects.create_user(
             username='farida', password=MOT_DE_PASSE, role=User.Role.PRESTATAIRE,
+            first_name='Farida', last_name='Migan',
             phone='90 12 34 56', ville='Cotonou', company_name='Farida Digital',
             bio='Webdesigner et intégratrice, passionnée de UI/UX.', is_verified=True,
         )
         nassirou = User.objects.create_user(
             username='nassirou', password=MOT_DE_PASSE, role=User.Role.PRESTATAIRE,
+            first_name='Nassirou', last_name='Salou',
             phone='94 56 78 90', ville='Parakou', company_name='Nassirou Réseaux',
             bio='Ingénieur réseaux et télécoms.',
         )

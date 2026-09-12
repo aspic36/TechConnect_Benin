@@ -164,6 +164,7 @@ python3 manage.py shell
     - Endpoint `POST /paiements/webhook/` (`csrf_exempt`, aucune session) : vérifie la signature → `400` si invalide, traite l'événement atomiquement (journal + action dans la même transaction, échec = rollback + renvoi autorisé).
     - `services.traiter_webhook(evenement)` : événements `transaction.approved` → `confirmer_paiement` (statut `paye` + notification prestataire) ; `transaction.declined/canceled/…` → `eclater_paiement` (`echec`) ; `payout.failed` → commission remise en `en_attente` + alerte staff ; événement inconnu ou transaction inconnue → journalisé et accepté (200, évite les renvois inutiles).
     - Suite portée à **133 tests OK**. ⚠️ Config à terminer côté FedaPay : pointer le webhook du dashboard vers `/paiements/webhook/` et renseigner `FEDAPAY_WEBHOOK_SECRET` dans `.env`.
+    - Correctif : `initier_collecte` envoie désormais `customer.firstname`/`lastname` (prénom/nom du client ; repli sur le username, sinon « Client TechConnect ») — la page de paiement FedaPay sandbox exigeait ces champs et les transactions étaient rejetées. `seed_demo` remplit aussi prénom/nom des comptes de démo.
     - Prochaine étape = P4 : retrait du flux de commission manuel (déjà automatique à la clôture).
 
 ## 🔲 RESTE À FAIRE (roadmap)

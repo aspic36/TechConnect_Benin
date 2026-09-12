@@ -84,6 +84,8 @@ def initier_collecte_mission(mission, client, methode, callback_url, reference):
             callback_url=callback_url,
             reference=reference,
             mode=settings.FEDAPAY_MODES_OPERATEURS.get(methode, 'mtn_open'),
+            prenom=client.first_name or client.username,
+            nom=client.last_name or '',
         )
     except (ErreurFedaPay, PaiementNonAutorise) as exc:
         notifier_staff(

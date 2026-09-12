@@ -100,13 +100,16 @@ class FedaPayProvider(PaiementProvider):
     # ------------------------------------------------------------------
     def initier_collecte(self, *, montant: int, description: str,
                          email: str, telephone: str, callback_url: str,
-                         reference: str, mode: str | None = None) -> ResultatCollecte:
+                         reference: str, mode: str | None = None,
+                         prenom: str = '', nom: str = '') -> ResultatCollecte:
         payload = {
             'description': description,
             'amount': int(montant),
             'currency': {'iso': 'XOF'},
             'callback_url': callback_url,
             'customer': {
+                'firstname': prenom or 'Client',
+                'lastname': nom or 'TechConnect',
                 'email': email,
                 'phone_number': {'number': telephone, 'country': 'bj'},
             },

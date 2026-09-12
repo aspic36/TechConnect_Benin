@@ -32,7 +32,8 @@ class PaiementProvider(ABC):
     @abstractmethod
     def initier_collecte(self, *, montant: int, description: str,
                          email: str, telephone: str, callback_url: str,
-                         reference: str, mode: str | None = None) -> ResultatCollecte:
+                         reference: str, mode: str | None = None,
+                         prenom: str = '', nom: str = '') -> ResultatCollecte:
         """Crée une transaction de collecte et retourne le lien de paiement."""
 
     @abstractmethod
