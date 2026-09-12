@@ -332,6 +332,7 @@ def initier_paiement(request, pk):
         'mission': mission,
         'reste': reste,
         'methodes': Paiement.Methode,
+        'fedapay_sandbox': settings.FEDAPAY_MODE == 'sandbox',
     })
 
 
