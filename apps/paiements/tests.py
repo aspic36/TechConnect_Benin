@@ -23,6 +23,7 @@ from .providers.fedapay import (
     PaiementNonAutorise,
     WebhookInvalide,
 )
+from .services import normaliser_telephone
 
 BASE = 'https://sandbox-api.fedapay.com/v1'
 
@@ -171,6 +172,19 @@ class FactoryTests(TestCase):
                 providers.initier_collecte(
                     montant=1, description='m', email='e', telephone='+2296',
                     callback_url='x', reference='r')
+
+
+class NormalisationTelephoneTests(TestCase):
+
+    def test_formats_locaux_vers_international(self):
+        for entree, attendu in [
+            ('97 10 22 33', '+22997102233'),
+            ('97102233', '+22997102233'),
+            ('+22997102233', '+22997102233'),
+            ('00229 97 10 22 33', '+22997102233'),
+            ('', ''),
+        ]:
+            self.assertEqual(normaliser_telephone(entree), attendu)
 
 
 @override_settings(FEDAPAY_SECRET_KEY='sk_sandbox_test',

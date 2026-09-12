@@ -20,6 +20,7 @@ from .providers.fedapay import ErreurFedaPay, PaiementNonAutorise
 
 import hashlib
 import json
+import re
 
 
 def montant_commission(prix):
@@ -52,6 +53,22 @@ def _mode_operateur(telephone):
     return 'mtn_open'
 
 
+def normaliser_telephone(numero):
+    """Normalise un n° béninois au format international ``+229XXXXXXXX``.
+
+    FedaPay exige un numéro complet avec indicatif (les transactions créées
+    avec un numéro local étaient rejetées à la page de paiement sandbox).
+    Exemples : ``'97 10 22 33'`` → ``'+22997102233'``, ``'+22997102233'`` → inchangé.
+    """
+    chiffres = re.sub(r'\D', '', numero or '')
+    chiffres = chiffres.lstrip('0')
+    if chiffres.startswith('229'):
+        chiffres = chiffres[3:]
+    if not chiffres:
+        return ''
+    return '+229' + chiffres
+
+
 def initier_collecte_mission(mission, client, methode, callback_url, reference):
     """Crée le paiement + la transaction FedaPay et renvoie le lien de paiement.
 
@@ -80,7 +97,7 @@ def initier_collecte_mission(mission, client, methode, callback_url, reference):
             montant=int(reste),
             description=f'Mission {mission.pk} — {mission.demande.titre}',
             email=client.email or 'client@techconnect.bj',
-            telephone=client.phone or '',
+            telephone=normaliser_telephone(client.phone),
             callback_url=callback_url,
             reference=reference,
             mode=settings.FEDAPAY_MODES_OPERATEURS.get(methode, 'mtn_open'),
@@ -147,7 +164,7 @@ def reverser_prestataire(mission, commission):
     """
     prestataire = mission.prestataire
     solde = int(mission.proposition.prix - commission.montant)
-    telephone = prestataire.phone or ''
+    telephone = normaliser_telephone(prestataire.phone)
     try:
         provider = get_provider()
         resultat = provider.initier_reversement(
