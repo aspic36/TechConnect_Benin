@@ -20,29 +20,40 @@
     <form method="post">
         {% csrf_token %}
         <div class="grid">
-            <label class="card plan-card" style="cursor: pointer;">
+            <label class="plan-card">
                 <input type="radio" name="methode" value="{{ methodes.MTN_MOMO }}" required checked>
-                <span class="card-title" style="margin: 0;">📱 MTN Mobile Money</span>
-                <span class="card-meta">Paiement sécurisé FedaPay</span>
+                <div class="plan-card-inner">
+                    <h3 class="card-title" style="margin: 0;">📱 MTN Mobile Money</h3>
+                    <p class="card-meta">Paiement sécurisé FedaPay</p>
+                </div>
             </label>
-            <label class="card plan-card" style="cursor: pointer;">
+            <label class="plan-card">
                 <input type="radio" name="methode" value="{{ methodes.MOOV }}">
-                <span class="card-title" style="margin: 0;">📱 Moov Money</span>
-                <span class="card-meta">Paiement sécurisé FedaPay</span>
+                <div class="plan-card-inner">
+                    <h3 class="card-title" style="margin: 0;">📱 Moov Money</h3>
+                    <p class="card-meta">Paiement sécurisé FedaPay</p>
+                </div>
             </label>
-            <label class="card plan-card" style="cursor: pointer;">
+            <label class="plan-card">
                 <input type="radio" name="methode" value="{{ methodes.CELTIS }}">
-                <span class="card-title" style="margin: 0;">📱 Celtiis Cash</span>
-                <span class="card-meta">Paiement sécurisé FedaPay</span>
+                <div class="plan-card-inner">
+                    <h3 class="card-title" style="margin: 0;">📱 Celtiis Cash</h3>
+                    <p class="card-meta">Paiement sécurisé FedaPay</p>
+                </div>
             </label>
-            <label class="card plan-card" style="cursor: pointer;">
+            <label class="plan-card">
                 <input type="radio" name="methode" value="{{ methodes.VIREMENT }}">
-                <span class="card-title" style="margin: 0;">🏦 Virement bancaire</span>
-                <span class="card-meta">Confirmation manuelle par l'équipe</span>
+                <div class="plan-card-inner">
+                    <h3 class="card-title" style="margin: 0;">🏦 Virement bancaire</h3>
+                    <p class="card-meta">Confirmation manuelle par l'équipe</p>
+                </div>
             </label>
         </div>
         <div class="actions" style="margin-top: 1rem;">
             <button class="btn btn-lg" type="submit" style="width: 100%;">💳 Payer {{ reste }} FCFA</button>
+            <p class="card-meta" style="text-align: center; margin: 0.75rem 0 0;">
+                La carte choisie est surlignée en vert ; le bouton ci-dessus lance le paiement.
+            </p>
         </div>
     </form>
 </div>
