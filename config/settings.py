@@ -280,3 +280,24 @@ FEDAPAY_MODES_OPERATEURS = {
     'moov': 'moov',
     'celtis': 'sbin',
 }
+
+# ---------------------------------------------------------------------------
+# Journalisation (console) : diagnostics webhook FedaPay en cas de rejet.
+# ---------------------------------------------------------------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'WARNING',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'apps.paiements': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}

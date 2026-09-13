@@ -38,7 +38,10 @@ def webhook_fedapay(request):
     signature = request.headers.get('X-FEDAPAY-SIGNATURE', '')
     try:
         evenement = get_provider().verifier_webhook(request.body, signature)
-    except WebhookInvalide:
+    except WebhookInvalide as exc:
+        logger.warning(
+            'Webhook FedaPay rejeté (%s) — signature reçue: %r, corps: %d octets',
+            exc, signature, len(request.body))
         return JsonResponse({'erreur': 'signature invalide'}, status=400)
     except NotImplementedError:
         return JsonResponse({'erreur': 'webhook non configuré'}, status=503)
@@ -47,4 +50,5 @@ def webhook_fedapay(request):
     except Exception as exc:  # pragma: no cover - erreur inattendue
         logger.exception('Échec du traitement du webhook FedaPay : %s', exc)
         return JsonResponse({'erreur': 'traitement échoué'}, status=500)
+    logger.warning('Webhook FedaPay traité: %s → %s', evenement.get('name'), statut)
     return JsonResponse({'statut': statut})
