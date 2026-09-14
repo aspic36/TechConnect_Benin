@@ -87,7 +87,7 @@ class ModerationTests(TestCase):
         self.assertFalse(Demande.objects.filter(pk=self.demande.pk).exists())
 
 
-class CommissionSanctionsTests(TestCase):
+class CommissionBackOfficeTests(TestCase):
 
     def setUp(self):
         from apps.demandes.models import Categorie
@@ -116,46 +116,18 @@ class CommissionSanctionsTests(TestCase):
             mission=mission, montant=10000, date_limite=timezone.now())
         return mission, commission
 
-    def test_confirm_commission_reactive_prestataire(self):
+    def test_confirm_commission_marque_payee(self):
         mission, commission = self._mission_terminee()
-        self.presta.suspendu = True
-        self.presta.date_suspension = timezone.now()
-        self.presta.save()
         self.client.login(username='staff', password='Passw0rd!')
         self.client.get(reverse('admin_panel:confirmer_commission', args=[commission.pk]))
         commission.refresh_from_db()
-        self.presta.refresh_from_db()
         self.assertEqual(commission.statut, 'payee')
-        self.assertFalse(self.presta.suspendu)
 
-    def test_suspendre_et_bannir_prestataire(self):
-        self.client.login(username='staff', password='Passw0rd!')
-        self.client.get(reverse('admin_panel:suspendre', args=[self.presta.pk]))
-        self.presta.refresh_from_db()
-        self.assertTrue(self.presta.suspendu)
-        self.client.get(reverse('admin_panel:bannir', args=[self.presta.pk]))
-        self.presta.refresh_from_db()
-        self.assertFalse(self.presta.is_active)
-
-    def test_reactiver_prestataire_banni(self):
-        self.presta.suspendu = True
-        self.presta.is_active = False
-        self.presta.save()
-        self.client.login(username='staff', password='Passw0rd!')
-        self.client.get(reverse('admin_panel:reactiver', args=[self.presta.pk]))
-        self.presta.refresh_from_db()
-        self.assertTrue(self.presta.is_active)
-        self.assertFalse(self.presta.suspendu)
-
-    def test_dashboard_compte_les_commissions_a_confirmer(self):
+    def test_dashboard_compte_les_commissions_en_attente(self):
         mission, commission = self._mission_terminee()
-        commission.date_limite = timezone.now() + timezone.timedelta(days=5)
-        commission.date_declaration = timezone.now()
-        commission.save()
         self.client.login(username='staff', password='Passw0rd!')
         reponse = self.client.get(reverse('admin_panel:dashboard'))
-        self.assertEqual(reponse.context['commissions_a_confirmer'], 1)
-        self.assertEqual(reponse.context['commissions_en_retard'], 0)
+        self.assertEqual(reponse.context['commissions_en_attente'], 1)
 
 
 class AbonnementBackOfficeTests(TestCase):

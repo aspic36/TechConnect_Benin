@@ -20,23 +20,18 @@
                     </div>
                     <div>
                         <h3 class="card-title" style="margin: 0;">{{ p.username }}</h3>
-                        <p class="card-meta">
-                            {% if p.is_verified %}
-                                <span class="badge acceptee">✓ Vérifié</span>
-                            {% else %}
-                                <span class="badge en_attente">À vérifier</span>
-                            {% endif %}
-                            {% if p.plan == 'pro' and p.date_fin_plan and p.date_fin_plan >= now %}
-                                <span class="badge acceptee" style="margin-left: 0.3rem;">⭐ Pro</span>
-                            {% elif p.plan == 'standard' and p.date_fin_plan and p.date_fin_plan >= now %}
-                                <span class="badge en_attente" style="margin-left: 0.3rem;">📈 Standard</span>
-                            {% endif %}
-                            {% if not p.is_active %}
-                                <span class="badge litige" style="margin-left: 0.3rem;">Banni</span>
-                            {% elif p.suspendu %}
-                                <span class="badge litige" style="margin-left: 0.3rem;">Suspendu</span>
-                            {% endif %}
-                        </p>
+<p class="card-meta">
+                        {% if p.is_verified %}
+                            <span class="badge acceptee">✓ Vérifié</span>
+                        {% else %}
+                            <span class="badge en_attente">À vérifier</span>
+                        {% endif %}
+                        {% if p.plan == 'pro' and p.date_fin_plan and p.date_fin_plan >= now %}
+                            <span class="badge acceptee" style="margin-left: 0.3rem;">⭐ Pro</span>
+                        {% elif p.plan == 'standard' and p.date_fin_plan and p.date_fin_plan >= now %}
+                            <span class="badge en_attente" style="margin-left: 0.3rem;">📈 Standard</span>
+                        {% endif %}
+                    </p>
                     </div>
                 </div>
                 <p class="card-meta">{{ p.company_name|default:'—' }} · {{ p.ville|default:'—' }} · {{ p.email|default:'—' }}</p>
@@ -44,21 +39,6 @@
                 {% if not p.is_verified %}
                     <div class="actions">
                         <a class="btn btn-success btn-sm" href="{% url 'admin_panel:verifier' p.pk %}">✓ Vérifier</a>
-                    </div>
-                {% endif %}
-                {% if not p.is_active %}
-                    <div class="actions">
-                        <a class="btn btn-ghost btn-sm" href="{% url 'admin_panel:reactiver' p.pk %}">↻ Réactiver</a>
-                    </div>
-                {% elif p.suspendu %}
-                    <div class="actions">
-                        <a class="btn btn-ghost btn-sm" href="{% url 'admin_panel:reactiver' p.pk %}">↻ Réactiver</a>
-                        <a class="btn btn-danger btn-sm" href="{% url 'admin_panel:bannir' p.pk %}">Ban</a>
-                    </div>
-                {% else %}
-                    <div class="actions">
-                        <a class="btn btn-danger btn-sm" href="{% url 'admin_panel:suspendre' p.pk %}">Suspendre</a>
-                        <a class="btn btn-danger btn-sm" href="{% url 'admin_panel:bannir' p.pk %}">Ban</a>
                     </div>
                 {% endif %}
             </div>

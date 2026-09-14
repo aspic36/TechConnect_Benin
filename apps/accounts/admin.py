@@ -18,15 +18,14 @@ class CustomUserAdmin(UserAdmin):
 
     Ajoute les colonnes de liste (role, telephone, ville, verification, plan)
     et etend les fieldsets par defaut avec les sections « Profil TechConnect »
-    et « Sanctions ».
+    et « Abonnement ».
     """
-    list_display = ('username', 'email', 'role', 'phone', 'ville', 'is_verified', 'suspendu', 'plan')
-    list_filter = ('role', 'is_verified', 'is_staff', 'suspendu', 'plan')
+    list_display = ('username', 'email', 'role', 'phone', 'ville', 'is_verified', 'plan')
+    list_filter = ('role', 'is_verified', 'is_staff', 'plan')
     # Extension du fieldset existant avec les champs de profil TechConnect
     fieldsets = UserAdmin.fieldsets + (
         ('Profil TechConnect', {'fields': ('role', 'phone', 'company_name', 'ville', 'bio', 'avatar', 'is_verified')}),
         ('Abonnement', {'fields': ('plan', 'date_debut_plan', 'date_fin_plan')}),
-        ('Sanctions', {'fields': ('suspendu', 'date_suspension')}),
     )
     # Champs proposes lors de la creation d'un utilisateur via l'admin
     add_fieldsets = UserAdmin.add_fieldsets + (

@@ -21,7 +21,7 @@ from apps.demandes.models import Demande
 from apps.paiements import services
 from apps.paiements.providers.fedapay import ErreurFedaPay, PaiementNonAutorise
 
-from .forms import EvaluationForm, PropositionForm, ReglementCommissionForm
+from .forms import EvaluationForm, PropositionForm
 from .models import Commission, Evaluation, Mission, Paiement, Proposition
 
 
@@ -204,53 +204,6 @@ def clore_mission(request, pk):
             )
     messages.success(request, 'Mission clôturée. Merci !')
     return redirect('propositions:detail_mission', pk=mission.pk)
-
-
-@login_required
-def mes_commissions(request):
-    """Liste les commissions dues par le prestataire connecté, des plus urgentes aux moins urgentes."""
-    if request.user.role != 'prestataire':
-        messages.error(request, 'Seul un prestataire a des commissions à régler.')
-        return redirect('propositions:liste_missions')
-    commissions = Commission.objects.filter(
-        mission__prestataire=request.user,
-    ).select_related('mission__demande', 'mission__client').order_by('date_limite')
-    return render(request, 'propositions/mes_commissions.html', {'commissions': commissions})
-
-
-@login_required
-def regler_commission(request, pk):
-    """Permet au prestataire de déclarer le règlement de sa commission."""
-    commission = get_object_or_404(Commission, pk=pk, mission__prestataire=request.user)
-    # Seul le prestataire concerné peut régler sa propre commission.
-    if request.user != commission.mission.prestataire:
-        messages.error(request, 'Action impossible.')
-        return redirect('propositions:mes_commissions')
-    if commission.statut == Commission.Statut.PAYEE:
-        messages.info(request, 'Cette commission est déjà réglée.')
-        return redirect('propositions:mes_commissions')
-    if request.method == 'POST':
-        form = ReglementCommissionForm(request.POST, instance=commission)
-        if form.is_valid():
-            # Enregistre la déclaration : le paiement reste en attente jusqu'à
-            # la confirmation de l'administrateur dans le back-office.
-            commission = form.save(commit=False)
-            commission.date_declaration = timezone.now()
-            commission.save()
-            notifier_staff(
-                f'{request.user.username} a déclaré le règlement de sa commission '
-                f'({commission.montant} FCFA).',
-                Notification.Type.COMMISSION,
-                reverse('admin_panel:commissions'),
-            )
-            messages.success(
-                request,
-                'Règlement déclaré. Un administrateur va confirmer ta commission.',
-            )
-            return redirect('propositions:mes_commissions')
-    else:
-        form = ReglementCommissionForm()
-    return render(request, 'propositions/regler_commission.html', {'form': form, 'commission': commission})
 
 
 @login_required

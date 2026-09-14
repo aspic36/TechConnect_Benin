@@ -23,7 +23,6 @@
     <a class="stat-link" href="{% url 'admin_panel:litiges' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ commissions_en_attente }}</div><div class="stat-label">Commissions dues</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:paiements' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ paiements_a_confirmer }}</div><div class="stat-label">Paiements à confirmer</div></div></a>
-    <a class="stat-link" href="{% url 'admin_panel:commissions' %}"><div class="stat"><div class="stat-value" style="color: var(--danger);">{{ commissions_en_retard }}</div><div class="stat-label">Commissions en retard</div></div></a>
     <a class="stat-link" href="{% url 'admin_panel:abonnements' %}"><div class="stat"><div class="stat-value" style="color: var(--accent);">{{ abonnements_a_confirmer }}</div><div class="stat-label">Abonnements à confirmer</div></div></a>
 </div>
 
@@ -57,17 +56,6 @@
 </div>
 {% endif %}
 
-{% if commissions_a_confirmer %}
-<div class="card" style="border-color: #c7d2fe;">
-    <h3 class="card-title">✅ Commissions déclarées à confirmer</h3>
-    <p class="card-text">{{ commissions_a_confirmer }} prestataire(s) ont déclaré leur règlement
-        et attendent ta confirmation.</p>
-    <div class="actions">
-        <a class="btn btn-accent" href="{% url 'admin_panel:commissions' %}">Confirmer les règlements</a>
-    </div>
-</div>
-{% endif %}
-
 {% if paiements_a_confirmer %}
 <div class="card" style="border-color: #c7d2fe;">
     <h3 class="card-title">💳 Paiements à confirmer</h3>
@@ -86,17 +74,6 @@
         attendent une décision.</p>
     <div class="actions">
         <a class="btn btn-accent" href="{% url 'admin_panel:abonnements' %}">Gérer les abonnements</a>
-    </div>
-</div>
-{% endif %}
-
-{% if commissions_en_retard %}
-<div class="card" style="border-color: var(--danger);">
-    <h3 class="card-title">💰 Commissions en retard</h3>
-    <p class="card-text">{{ commissions_en_retard }} commission(s) impayée(s) : les prestataires
-        concernés doivent être suspendus (traitement automatique chaque nuit).</p>
-    <div class="actions">
-        <a class="btn btn-danger" href="{% url 'admin_panel:commissions' %}">Gérer les commissions</a>
     </div>
 </div>
 {% endif %}

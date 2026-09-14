@@ -295,6 +295,7 @@ class PaiementTests(BaseTests):
         self.assertEqual(paiement.methode, Paiement.Methode.MTN_MOMO)
         self.assertEqual(paiement.statut, Paiement.Statut.EN_ATTENTE)
 
+    @override_settings(FEDAPAY_SECRET_KEY='sk_test_demo')
     def test_mobile_avec_fedapay_redirige_vers_la_page_de_paiement(self):
         mission = self._mission()
         url = 'https://sandbox-process.fedapay.com/jeton'
@@ -397,93 +398,6 @@ class CommissionTests(BaseTests):
             destinataire=self.presta, type='mission',
             message__contains='Reversement').exists())
 
-    def test_mes_commissions_reservees_aux_prestataires(self):
-        mission = self._mission()
-        mission.statut = Mission.Statut.TERMINEE
-        mission.save()
-        Commission.objects.create(
-            mission=mission, montant=10000,
-            date_limite=timezone.now(),
-        )
-        self.client.login(username='client', password='Passw0rd!')
-        reponse = self.client.get(reverse('propositions:mes_commissions'))
-        self.assertRedirects(reponse, reverse('propositions:liste_missions'))
-
-    def test_regler_commission_cree_declaration(self):
-        mission = self._mission()
-        mission.statut = Mission.Statut.TERMINEE
-        mission.save()
-        commission = Commission.objects.create(
-            mission=mission, montant=10000,
-            date_limite=timezone.now(),
-        )
-        self.client.login(username='presta', password='Passw0rd!')
-        self.client.post(
-            reverse('propositions:regler_commission', args=[commission.pk]),
-            {'methode': 'mtn_momo'},
-        )
-        commission.refresh_from_db()
-        self.assertIsNotNone(commission.date_declaration)
-        self.assertEqual(commission.statut, Commission.Statut.EN_ATTENTE)
-
-
-class SanctionsAutomatiquesTests(BaseTests):
-
-    def test_verifier_commissions_suspend_apres_la_date_limite(self):
-        from django.core.management import call_command
-        mission = self._mission()
-        Commission.objects.create(
-            mission=mission, montant=10000,
-            date_limite=timezone.now() - timezone.timedelta(days=1),
-        )
-        call_command('verifier_commissions')
-        self.presta.refresh_from_db()
-        self.assertTrue(self.presta.suspendu)
-
-    def test_verifier_commissions_ignore_les_commissions_a_jour(self):
-        from django.core.management import call_command
-        mission = self._mission()
-        Commission.objects.create(
-            mission=mission, montant=10000,
-            date_limite=timezone.now() + timezone.timedelta(days=5),
-        )
-        call_command('verifier_commissions')
-        self.presta.refresh_from_db()
-        self.assertFalse(self.presta.suspendu)
-
-    def test_verifier_commissions_bannit_apres_la_suspension_limite(self):
-        from django.conf import settings
-        from django.core.management import call_command
-        mission = self._mission()
-        Commission.objects.create(
-            mission=mission, montant=10000,
-            date_limite=timezone.now() - timezone.timedelta(days=1),
-        )
-        self.presta.suspendu = True
-        self.presta.date_suspension = timezone.now() - timezone.timedelta(
-            days=settings.COMMISSION_SUSPENSION_JOURS + 1)
-        self.presta.save()
-        call_command('verifier_commissions')
-        self.presta.refresh_from_db()
-        self.assertFalse(self.presta.is_active)
-        self.assertFalse(self.presta.suspendu)
-
-    def test_middleware_redirige_le_prestataire_suspendu(self):
-        mission = self._mission()
-        Commission.objects.create(
-            mission=mission, montant=10000,
-            date_limite=timezone.now() - timezone.timedelta(days=1),
-        )
-        self.presta.suspendu = True
-        self.presta.save()
-        self.client.login(username='presta', password='Passw0rd!')
-        # Une page normale est bloquée par le middleware…
-        reponse = self.client.get(reverse('propositions:mes_propositions'))
-        self.assertRedirects(reponse, reverse('propositions:mes_commissions'))
-        # …mais la page de règlement reste accessible.
-        reponse = self.client.get(reverse('propositions:mes_commissions'))
-        self.assertEqual(reponse.status_code, 200)
-
 
 class NotificationDeclenchementTests(BaseTests):
     """Les actions métier clés créent des notifications aux bons destinataires."""
@@ -495,20 +409,3 @@ class NotificationDeclenchementTests(BaseTests):
         self.client.get(reverse('propositions:accepter', args=[proposition.pk]))
         self.assertTrue(Notification.objects.filter(
             destinataire=self.presta, type='mission').exists())
-
-    def test_reglement_commission_notifie_le_staff(self):
-        from apps.accounts.models import Notification, User
-        staff = User.objects.create_user(
-            username='staff', password='Passw0rd!',
-            role=User.Role.CLIENT, is_staff=True)
-        mission = self._mission()
-        commission = Commission.objects.create(
-            mission=mission, montant=10000,
-            date_limite=timezone.now() + timezone.timedelta(days=5))
-        self.client.login(username='presta', password='Passw0rd!')
-        self.client.post(
-            reverse('propositions:regler_commission', args=[commission.pk]),
-            {'methode': 'virement'},
-        )
-        self.assertTrue(Notification.objects.filter(
-            destinataire=staff, type='commission').exists())

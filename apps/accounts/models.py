@@ -44,9 +44,8 @@ class User(AbstractUser):
         validators=[EXTENSIONS_AVATAR, valider_taille_avatar],
     )
     is_verified = models.BooleanField(default=False)
-    # Sanctions économiques : un prestataire suspendu ne peut plus utiliser la
-    # plateforme tant qu'il n'a pas réglé sa commission. Le bannissement (= is_active
-    # à False) bloque définitivement la connexion.
+    # Anciens champs de sanction économique (inutilisés depuis la fin du flux
+    # manuel de commission) : conservés pour compatibilité BDD, sans logique.
     suspendu = models.BooleanField(default=False)
     date_suspension = models.DateTimeField(null=True, blank=True)
     # Abonnement prestataire : plan en cours + période couverte par le paiement.

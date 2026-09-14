@@ -129,10 +129,10 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
     - Le prestataire déclare son règlement (`regler_commission`), l'**admin confirme** dans le back-office (`commissions/`).
     - Sanctions automatiques (commande `verifier_commissions`, cron **04h10**) : commission en retard → **suspension** (champ `suspendu` + middleware bloquant tout sauf la page de règlement) ; suspension de 7 jours → **bannissement** (`is_active = False`).
     - Commandes manuelles admin : `suspendre` / `bannir` / `reactiver` un prestataire (page `prestataires/`).
-    - Suite portée à **68 tests OK**.
+    - Suite portée à **68 tests OK**. ⚠️ Flux entièrement supprimé en **P4** (voir item 24) : plus de sanctions ni de règlement manuel.
 17. **Renforcement MVP (interface + anti-contournement)** :
     - Cartes du tableau de bord admin **cliquables** (liens vers les pages back-office / admin Django).
-    - **Carte d'alerte « commissions déclarées à confirmer »** sur le dashboard + badge sur la page commissions.
+    - ~~Carte d'alerte « commissions déclarées à confirmer » + badge « à confirmer »~~ (retirées en P4, item 24).
     - **Anti-contournement messagerie** (`apps/messagerie/utils.py`) : détection des n° béninois (`+229`, formats nationaux) → message bloqué (protection de la commission 10%).
     - **Page CGU** (`/cgu/`) avec les règles (rôles, anti-contournement, commission, sanctions) + bannière de rappel dans la messagerie.
     - Suite portée à **78 tests OK**.
@@ -181,6 +181,13 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
     - Correctif n°2 : `normaliser_telephone()` (services) convertit les n° béninois locaux (`97 10 22 33`, `00229…`) vers le format international `+229XXXXXXXX` exigé par FedaPay (collecte ET reversement), sinon la transaction échouait à la page sandbox.
     - Prochaine étape = P4 : retrait du flux de commission manuel (déjà automatique à la clôture).
 
+24. **P4 — Retrait du flux de commission manuel (terminé)** :
+    - Suppression du côté prestataire : pages `mes_commissions` / `regler_commission` + template + `ReglementCommissionForm` + `verifier_commissions` (commande + cron retiré).
+    - Suppression des **sanctions automatiques** : middleware `SuspensionMiddleware`, commande `verifier_commissions`, vues admin `suspendre_prestataire` / `bannir_prestataire` / `reactiver_prestataire` et boutons correspondants ; champs `User.suspendu` / `date_suspension` plus utilisés (conservés en BDD sans logique) ; `COMMISSION_SUSPENSION_JOURS` retiré des settings.
+    - **Back-office simplifié** : la page `commissions/` liste les commissions `en attente` avec un bouton « Marquer payée » (`confirmer_commission`), notification prestataire → page de la mission ; fonctionnalité `+ Prolonger la date` retirée ; cartes dashboard « à confirmer » / « en retard » retirées.
+    - CGU §4 réécrit (« Paiement de la commission » : retenue auto à la clôture, repli admin si reversement indisponible).
+    - Suite portée à **125 tests OK** (9 tests de flux manuel/sanctions retirés).
+
 ## 🔲 RESTE À FAIRE (roadmap)
 
 **Logiciel (MVP)**
@@ -191,6 +198,7 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
 - [x] ~~Formulaire profil~~ (édition des infos, avatar, bio)
 - [x] ~~Back-office : modération des demandes (validation `en_attente`), gestion des litiges~~
 - [x] ~~Paiements~~ (accord direct MVP : enregistrement d'un paiement par le client) — escrow / Mobile Money en Phase future
+- [x] ~~P4 : retrait du flux de commission manuel~~ (sanctions + règlement prestataire supprimés, back-office simplifié)
 
 **Sécurité & production (Phases 5-6)**
 - [x] ~~Renforcement n°1 : anti brute-force connexion, validation uploads (avatar)~~

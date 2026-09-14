@@ -30,8 +30,6 @@
                    href="{% url 'demandes:catalogue' %}">🔍 Catalogue</a>
                 <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_propositions,soumettre' %}active{% endif %}"
                    href="{% url 'propositions:mes_propositions' %}">📤 Mes propositions</a>
-                <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_commissions,regler_commission' %}active{% endif %}"
-                   href="{% url 'propositions:mes_commissions' %}">💰 Commissions</a>
             {% endif %}
             <a class="sidebar-link {% if request.resolver_match.url_name in 'liste_missions,detail_mission' %}active{% endif %}"
                href="{% url 'propositions:liste_missions' %}">🚀 Missions</a>
@@ -52,7 +50,7 @@
                    href="{% url 'admin_panel:demandes' %}">🗂 Demandes à modérer</a>
                 <a class="sidebar-link {% if request.resolver_match.url_name in 'litiges,clore_litige' %}active{% endif %}"
                    href="{% url 'admin_panel:litiges' %}">⚖️ Litiges</a>
-                <a class="sidebar-link {% if request.resolver_match.url_name in 'commissions,confirmer_commission,prolonger_commission' %}active{% endif %}"
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'commissions,confirmer_commission' %}active{% endif %}"
                    href="{% url 'admin_panel:commissions' %}">💳 Commissions</a>
                 <a class="sidebar-link {% if request.resolver_match.url_name in 'abonnements,confirmer_abonnement,refuser_abonnement' %}active{% endif %}"
                    href="{% url 'admin_panel:abonnements' %}">⭐ Abonnements</a>

@@ -1,13 +1,13 @@
 """
 Formulaires de l'app propositions.
 
-Définit les formulaires pour la soumission d'une proposition par un prestataire,
-l'évaluation d'une mission (note 1-5) et l'enregistrement d'un paiement par le client.
+Définit les formulaires pour la soumission d'une proposition par un prestataire
+et l'évaluation d'une mission (note 1-5).
 """
 
 from django import forms
 
-from .models import Commission, Evaluation, Paiement, Proposition
+from .models import Evaluation, Proposition
 
 
 class PropositionForm(forms.ModelForm):
@@ -33,20 +33,4 @@ class EvaluationForm(forms.ModelForm):
             # Curseur (range) limité à la plage 1-5 pour la note.
             'note': forms.NumberInput(attrs={'min': 1, 'max': 5, 'type': 'range'}),
             'commentaire': forms.Textarea(attrs={'rows': 4}),
-        }
-
-
-class ReglementCommissionForm(forms.ModelForm):
-    """Formulaire de déclaration de règlement de la commission par le prestataire.
-
-    Le prestataire indique simplement la méthode utilisée : le montant est
-    fixe (calculé automatiquement) et le paiement reste « en attente » tant
-    que l'administrateur ne l'a pas confirmé dans le back-office.
-    """
-
-    class Meta:
-        model = Commission
-        fields = ('methode',)
-        labels = {
-            'methode': 'Moyen de paiement utilisé pour régler la commission',
         }

@@ -50,6 +50,14 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # ---------------------------------------------------------------------------
+# Origines de confiance CSRF (POST HTTPS via ngrok)
+# ---------------------------------------------------------------------------
+CSRF_TRUSTED_ORIGINS = [
+    "https://kam-nonsoluble-egoistically.ngrok-free.dev",
+    "https://kam-nonsoluble-egoistically.ngrok-free.app",
+]
+
+# ---------------------------------------------------------------------------
 # Applications installées
 # ---------------------------------------------------------------------------
 # Applications Django de base (admin, auth, sessions, etc.) + nos 5 apps métier :
@@ -97,9 +105,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # Restreint les prestataires suspendus (commission impayée) à la seule page
-    # de règlement de leur commission.
-    'apps.accounts.middleware.SuspensionMiddleware',
 ]
 
 # ---------------------------------------------------------------------------
@@ -224,8 +229,6 @@ if not DEBUG:
 COMMISSION_POURCENT = 5
 # Délai accordé au prestataire pour régler sa commission après la clôture.
 COMMISSION_DELAI_JOURS = 7
-# Délai de suspension accordé avant le bannissement définitif du prestataire.
-COMMISSION_SUSPENSION_JOURS = 7
 
 # Abonnements prestataires (freemium) : quota de propositions mensuelles.
 # Le plan « Gratuit » offre PLAN_GRAUIT_PROPOSITIONS par mois.
