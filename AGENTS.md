@@ -69,6 +69,19 @@ python3 manage.py createsuperuser
 python3 manage.py shell
 ```
 
+### Services automatiques (systemd user)
+
+Django et ngrok tournent en **services systemd** (démarrage auto + `Restart`, même après reboot grâce au linger `aspickiller`) — plus besoin de lancer `runserver` à la main :
+
+```bash
+systemctl --user status techconnect-django techconnect-ngrok   # état
+systemctl --user restart techconnect-django techconnect-ngrok  # relancer
+journalctl --user -u techconnect-django -n 30 -f               # logs serveur
+journalctl --user -u techconnect-ngrok -n 30 -f                # logs tunnel
+```
+
+URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel est lancé par `ngrok http 8000` en service, l'API locale de contrôle est sur `127.0.0.1:4040`). Hosts autorisés Django : `localhost,127.0.0.1,.ngrok-free.dev,.ngrok-free.app` (variables dans `.env`).
+
 ## 🧩 Règles métier
 
 - **2 rôles uniquement** : `client` / `prestataire` (le rôle Admin a été supprimé — les accès admin passent par `is_staff`/`is_superuser`).
