@@ -16,9 +16,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.emails import envoyer_email
 from apps.accounts.models import Abonnement, Notification, User
 from apps.accounts.notifications import creer_notification
-from apps.demandes.models import Categorie, Demande
+from apps.demandes.models import Categorie, Demande, FavorisDemande
 from apps.paiements.services import confirmer_paiement as confirmer_paiement_service
 from apps.propositions.models import Commission, Litige, Mission, Paiement
 
@@ -151,16 +152,54 @@ def liste_demandes(request):
 
 @staff_member_required
 def valider_demande(request, pk):
-    """Approuve une demande en attente : elle passe au statut en_cours (publique)."""
+    """Approuve une demande en attente : elle passe au statut en_cours (publique).
+
+    Le client est notifié + prévenu par e-mail.  Les prestataires ayant la
+    compétence correspondante (catégorie) ou ayant mis la demande en favori
+    reçoivent une alerte « nouvelle demande ».
+    """
     demande = Demande.objects.get(pk=pk)
     demande.statut = Demande.Statut.EN_COURS
     demande.save()
+    lien = reverse('demandes:detail_demande', args=[demande.pk])
     creer_notification(
         [demande.client],
         f'Ta demande « {demande.titre} » a été validée et est publique !',
         Notification.Type.DEMANDE,
-        reverse('demandes:detail_demande', args=[demande.pk]),
+        lien,
     )
+    envoyer_email(
+        [demande.client],
+        'Ta demande est en ligne sur TechConnect Bénin',
+        f'Ta demande « <strong>{demande.titre}</strong> » a été validée et est '
+        'désormais publique. Les prestataires peuvent maintenant te faire des '
+        'propositions !',
+        bouton='Voir ma demande', lien=lien)
+
+    # Alerte aux prestataires concernés : compétents dans la catégorie ou
+    # ayant mis la demande en favori (exclut le client et l'admin).
+    cibles = {}
+    if demande.categorie:
+        for u in User.objects.filter(
+                role=User.Role.PRESTATAIRE, competences=demande.categorie):
+            cibles[u.pk] = u
+    for favori in FavorisDemande.objects.filter(demande=demande).select_related('prestataire'):
+        cibles[favori.prestataire_id] = favori.prestataire
+    cibles.pop(demande.client_id, None)
+    cibles.pop(request.user.pk, None)
+    for u in cibles.values():
+        creer_notification(
+            [u],
+            f'Nouvelle demande « {demande.titre} » — ça correspond à tes compétences !',
+            Notification.Type.DEMANDE, lien)
+        envoyer_email(
+            [u],
+            'Nouvelle demande disponible sur TechConnect Bénin',
+            f'Une nouvelle demande « <strong>{demande.titre}</strong> » vient d\'être '
+            'publiée et correspond à tes compétences. Réagis vite pour augmenter '
+            'tes chances !',
+            bouton='Voir la demande', lien=lien)
+
     messages.success(request, f'Demande validée : {demande.titre}')
     return redirect('admin_panel:demandes')
 
@@ -244,6 +283,15 @@ def resoudre_litige(request, pk):
         message,
         Notification.Type.LITIGE,
         reverse('propositions:detail_mission', args=[mission.pk]),
+    )
+    envoyer_email(
+        [mission.client, mission.prestataire],
+        f'Litige résolu — {mission.demande.titre}',
+        f'Le litige sur « <strong>{mission.demande.titre}</strong> » est résolu. '
+        f'Décision : {litige.get_en_faveur_display() or "avis de l’équipe"}. '
+        f'{decision or "Merci de votre confiance."}',
+        bouton='Voir la mission',
+        lien=reverse('propositions:detail_mission', args=[mission.pk]),
     )
     messages.success(request, f'Litige résolu : {mission.demande.titre}.')
     return redirect('admin_panel:litiges')

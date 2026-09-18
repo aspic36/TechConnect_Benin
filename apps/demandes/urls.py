@@ -16,4 +16,7 @@ urlpatterns = [
     path('catalogue/', views.catalogue, name='catalogue'),
     # Détail d'une demande (contrôle d'accès propriétaire / prestataire)
     path('demande/<int:pk>/', views.detail_demande, name='detail_demande'),
+    # Favoris du prestataire (toggle + liste)
+    path('mes-favoris/', views.mes_favoris, name='mes_favoris'),
+    path('demande/<int:pk>/favori/', views.basculer_favori, name='basculer_favori'),
 ]

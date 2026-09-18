@@ -18,6 +18,7 @@
                 </div>
                 <h3 class="card-title">{{ prop.prestataire.username }}
                     {% if prop.prestataire.is_verified %}<span class="tag emerald">✓ Vérifié</span>{% endif %}
+                    <a class="btn btn-ghost btn-sm" href="{% url 'accounts:profil_prestataire' prop.prestataire.pk %}">👤 Profil</a>
                 </h3>
                 <p class="card-meta">
                     {{ prop.prestataire.company_name|default:'' }} · {{ prop.prestataire.ville|default:'' }}

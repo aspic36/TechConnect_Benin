@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Mes favoris — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">⭐ Mes favoris</h2>
+            <p>Les demandes qui t'intéressent, retrouvées d'un coup d'œil.</p>
+        </div>
+        <a class="btn btn-outline btn-sm" href="{% url 'demandes:catalogue' %}">🔍 Voir le catalogue</a>
+    </div>
+</div>
+{% if favoris %}
+    <div class="grid">
+        {% for favori in favoris %}
+            <div class="card card-hover">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; gap: 0.5rem; flex-wrap: wrap;">
+                    <span class="badge {{ favori.demande.statut }}">{{ favori.demande.get_statut_display }}</span>
+                    {% if favori.demande.urgence %}<span class="tag amber">⚡ Urgent</span>{% endif %}
+                </div>
+                <h3 class="card-title">{{ favori.demande.titre }}</h3>
+                <p class="card-meta">
+                    <span class="tag">{{ favori.demande.categorie|default:'Général' }}</span>
+                    {% if favori.demande.a_distance %}
+                        <span class="tag sky">🌍 À distance</span>
+                    {% else %}
+                        <span class="tag">{{ favori.demande.lieu|default:'Non précisé' }}</span>
+                    {% endif %}
+                </p>
+                {% if favori.demande.budget_min or favori.demande.budget_max %}
+                    <p class="card-text"><strong>💡 Budget :</strong>
+                        <span style="color: var(--success); font-weight: 700;">
+                            {{ favori.demande.budget_min|default:'—' }} – {{ favori.demande.budget_max|default:'—' }} FCFA
+                        </span>
+                    </p>
+                {% endif %}
+                <p class="card-text">{{ favori.demande.description|truncatewords:22 }}</p>
+                <div class="actions">
+                    <a class="btn btn-outline btn-sm" href="{% url 'demandes:detail_demande' favori.demande.pk %}">Voir la mission</a>
+                    {% if favori.demande.statut == 'en_cours' %}
+                        <a class="btn btn-accent btn-sm" href="{% url 'propositions:soumettre' favori.demande.pk %}">Faire une proposition</a>
+                    {% endif %}
+                    <a class="btn btn-ghost btn-sm" href="{% url 'demandes:basculer_favori' favori.demande.pk %}?next={{ request.path }}">☆ Retirer</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty">
+        <div class="big">⭐</div>
+        <p>Tu n'as pas encore de demandes en favori. Parcours le catalogue et marque celles qui t'intéressent !</p>
+        <a class="btn btn-accent" href="{% url 'demandes:catalogue' %}">Parcourir le catalogue</a>
+    </div>
+{% endif %}
+{% endblock %}

@@ -9,7 +9,7 @@ supplementaires de TechConnect Benin.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Abonnement, Notification, User
+from .models import Abonnement, Notification, Projet, User
 
 
 @admin.register(User)
@@ -21,7 +21,7 @@ class CustomUserAdmin(UserAdmin):
     et « Abonnement ».
     """
     list_display = ('username', 'email', 'role', 'phone', 'ville', 'is_verified', 'plan')
-    list_filter = ('role', 'is_verified', 'is_staff', 'plan')
+    list_filter = ('role', 'is_verified', 'is_staff', 'plan', 'competences')
     # Extension du fieldset existant avec les champs de profil TechConnect
     fieldsets = UserAdmin.fieldsets + (
         ('Profil TechConnect', {'fields': ('role', 'phone', 'company_name', 'ville', 'bio', 'avatar', 'is_verified')}),
@@ -47,3 +47,11 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ('destinataire', 'type', 'message', 'est_lue', 'date_creation')
     list_filter = ('type', 'est_lue')
     list_select_related = ('destinataire',)
+
+
+@admin.register(Projet)
+class ProjetAdmin(admin.ModelAdmin):
+    """Administration des projets de portfolio des prestataires."""
+    list_display = ('prestataire', 'titre', 'date_creation')
+    list_filter = ('prestataire',)
+    search_fields = ('titre', 'description')

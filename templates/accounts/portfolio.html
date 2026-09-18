@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Mon portfolio — TechConnect Bénin{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div>
+            <h2 style="margin: 0;">💼 Mon portfolio</h2>
+            <p>Présente tes réalisations pour rassurer les clients.</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'accounts:profil' %}">← Mon profil</a>
+    </div>
+</div>
+
+<div class="card" style="max-width: 640px; margin-bottom: 1.4rem;">
+    <h3 class="card-title">Ajouter une réalisation</h3>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for champ in form %}
+            <div class="form-group">
+                <label for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                {{ champ }}
+                {% if champ.errors %}
+                    <p class="form-error">{{ champ.errors|striptags }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div class="actions">
+            <button type="submit" class="btn btn-accent btn-lg">➕ Ajouter au portfolio</button>
+            <a class="btn btn-outline" href="{% url 'accounts:profil_prestataire' user.pk %}">👁 Voir mon profil public</a>
+        </div>
+    </form>
+</div>
+
+<h2 style="margin: 1.4rem 0 0.8rem;">Mes projets ({{ projets|length }})</h2>
+{% if projets %}
+    <div class="portfolio-grid">
+        {% for projet in projets %}
+            <div class="card portfolio-card">
+                {% if projet.image %}
+                    <img src="{{ projet.image.url }}" alt="{{ projet.titre }}"
+                         style="width: 100%; height: 140px; object-fit: cover; border-radius: var(--radius-sm);">
+                {% endif %}
+                <h3 class="card-title" style="margin-top: 0.6rem;">{{ projet.titre }}</h3>
+                {% if projet.description %}
+                    <p class="card-text">{{ projet.description|truncatewords:25 }}</p>
+                {% endif %}
+                {% if projet.url %}
+                    <a class="btn btn-outline btn-sm" href="{{ projet.url }}" target="_blank" rel="noopener">🔗 Lien</a>
+                {% endif %}
+                <div class="actions">
+                    <a class="btn btn-ghost btn-sm" href="{% url 'accounts:supprimer_projet' projet.pk %}"
+                       onclick="return confirm('Supprimer ce projet du portfolio ?');">🗑 Supprimer</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty">
+        <div class="big">💼</div>
+        <p>Aucune réalisation pour le moment. Ajoute ton premier projet !</p>
+    </div>
+{% endif %}
+{% endblock %}

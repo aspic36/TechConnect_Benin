@@ -32,6 +32,9 @@
     {% if user.role == 'prestataire' %}
         <div class="actions" style="margin-top: 1.4rem;">
             <a class="btn btn-lg" href="{% url 'propositions:soumettre' demande.pk %}">Soumettre une proposition</a>
+            <a class="btn btn-outline" href="{% url 'demandes:basculer_favori' demande.pk %}?next={{ request.path }}">
+                {% if favori %}⭐ Retirer des favoris{% else %}☆ Ajouter aux favoris{% endif %}
+            </a>
         </div>
     {% elif demande.client == user %}
         <div class="actions" style="margin-top: 1.4rem;">

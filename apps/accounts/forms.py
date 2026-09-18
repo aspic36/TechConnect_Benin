@@ -10,7 +10,9 @@ au modele ``User`` de TechConnect Benin.
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
-from .models import Abonnement, User
+from apps.demandes.models import Categorie
+
+from .models import Abonnement, Projet, User
 
 
 class InscriptionForm(UserCreationForm):
@@ -48,11 +50,31 @@ class InscriptionForm(UserCreationForm):
 class ProfilForm(forms.ModelForm):
     """Formulaire d'edition du profil utilisateur (email, telephone, ville, ...)."""
 
+    competences = forms.ModelMultipleChoiceField(
+        queryset=Categorie.objects.all().order_by('nom'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label='Compétences',
+        help_text='Pour un prestataire : les catégories que tu maîtrises, '
+                  'utilisées pour les alertes de nouvelles demandes.',
+    )
+
     class Meta:
         model = User
-        fields = ('email', 'phone', 'ville', 'company_name', 'bio', 'avatar')
+        fields = ('email', 'phone', 'ville', 'company_name', 'bio', 'avatar', 'competences')
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 4}),
+        }
+
+
+class ProjetForm(forms.ModelForm):
+    """Formulaire d'ajout d'une réalisation au portfolio d'un prestataire."""
+
+    class Meta:
+        model = Projet
+        fields = ('titre', 'description', 'image', 'url')
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
         }
 
 

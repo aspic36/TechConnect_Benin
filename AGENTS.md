@@ -47,6 +47,7 @@ Copier `.env.example` → `.env` puis remplir. Variables utilisées par `config/
 ```
 DB_NAME, DB_USER, DB_PASSWORD, DB_ROOT_PASSWORD, DB_HOST, DB_PORT
 DJANGO_SECRET_KEY, DJANGO_DEBUG, DJANGO_ALLOWED_HOSTS
+EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS, EMAIL_FROM
 ```
 ⚠️ Jamais committer `.env`. Les mots de passe réels restent locaux.
 
@@ -195,6 +196,13 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
     - **Statistiques avancées** (`admin_panel:statistiques`, app `django.contrib.humanize` activée) : revenus encaissés/en attente (commissions), volume d'activité (missions, CA total, panier moyen), **missions par catégorie** (barres CSS), **top 5 prestataires** (missions clôturées, note moyenne, CA). Lien sidebar + carte dashboard « FCFA encaissés ».
     - `django.contrib.humanize` déclaré dans `INSTALLED_APPS`. Suite portée à **134 tests OK**.
 
+26. **Emails transactionnels + profil prestataire enrichi + recherche catalogue + favoris (terminé)** :
+    - **Emails transactionnels** (`apps/accounts/emails.py` + `templates/emails/base_email.html`) : HTML + version texte, backend SMTP via `.env` (`EMAIL_HOST` vide → console en dev, jamais d'échec métier). Déclenchés à l'inscription (bienvenue), à la validation d'une demande, à la confirmation de paiement, au signalement et à la résolution de litige.
+    - **Profil prestataire enrichi** : `User.competences` (M2M → `Categorie`, migration `0007`), méthode `note_moyenne()`, modèle **`Projet`** (portfolio : titre, description, image ≤ 5 Mo validée, lien), page publique `/prestataires/<pk>/`, gestion du portfolio `/profil/portfolio/`, badge note ⭐ + compétences sur le profil, lien « 👤 Profil » sur chaque proposition reçue.
+    - **Recherche & filtres catalogue** : filtres cumulables `q` (titre/description), catégorie, budget min/max (recouvrement d'intervalle), ville (`lieu`), « à distance » + **pagination 12/page** avec URLs préservant les filtres.
+    - **Favoris + alertes compétences** : modèle `FavorisDemande` (unicité prestataire/demande, migration `0002`), toggle ⭐ sur carte et détail, page « Mes favoris », lien sidebar ; à la validation d'une demande, **notification + email** envoyés aux prestataires compétents (catégorie) et à ceux ayant mis la demande en favori.
+    - `.env.example` : variables `EMAIL_*` ajoutées. Suite portée à **151 tests OK**.
+
 ## 🔲 RESTE À FAIRE (roadmap)
 
 **Logiciel (MVP)**
@@ -208,6 +216,10 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
 - [x] ~~P4 : retrait du flux de commission manuel~~ (sanctions + règlement prestataire supprimés, back-office simplifié)
 - [x] ~~Litiges (`signaler_litige`, médiation, résolution back-office)~~
 - [x] ~~Statistiques avancées~~ (revenus, missions par catégorie, top prestataires)
+- [x] ~~Emails transactionnels~~ (bienvenue, demande validée, paiement confirmé, litiges)
+- [x] ~~Profil prestataire enrichi~~ (compétences, portfolio, note moyenne, page publique)
+- [x] ~~Recherche & filtres catalogue + pagination~~ (12/page)
+- [x] ~~Favoris de demandes + alertes compétences~~
 
 **Sécurité & production (Phases 5-6)**
 - [x] ~~Renforcement n°1 : anti brute-force connexion, validation uploads (avatar)~~

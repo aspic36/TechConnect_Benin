@@ -14,8 +14,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from .forms import ConnexionForm, DemandeAbonnementForm, InscriptionForm, ProfilForm
-from .models import Abonnement, Notification, User
+from .emails import envoyer_email
+from .forms import (ConnexionForm, DemandeAbonnementForm, InscriptionForm,
+                    ProfilForm, ProjetForm)
+from .models import Abonnement, Notification, Projet, User
 from .notifications import notifier_staff
 from .security import enregistrer_echec, reinitialiser_echecs, tentative_autorisee
 
@@ -70,6 +72,18 @@ def inscription(request):
                     f'Nouveau prestataire à vérifier : {user.username}',
                     Notification.Type.SYSTEME,
                     reverse('admin_panel:prestataires'),
+                )
+            # E-mail de bienvenue (si une adresse a été renseignée).
+            if user.email:
+                envoyer_email(
+                    [user],
+                    'Bienvenue sur TechConnect Bénin ⚡',
+                    f'Bienvenue <strong>{user.username}</strong> ! Ton compte '
+                    f'{"prestataire" if user.role == User.Role.PRESTATAIRE else "client"} '
+                    'a été créé avec succès sur la plateforme de mise en relation '
+                    'des services informatiques au Bénin.',
+                    bouton='Démarrer',
+                    lien=request.build_absolute_uri(reverse(accueil_selon_role(user))),
                 )
             messages.success(request, f'Bienvenue {user.username} !')
             return redirect(accueil_selon_role(user))
@@ -141,6 +155,55 @@ def modifier_profil(request):
     else:
         form = ProfilForm(instance=request.user)
     return render(request, 'accounts/modifier_profil.html', {'form': form})
+
+
+@login_required
+def gestion_portfolio(request):
+    """Gestion du portfolio du prestataire : liste des projets + ajout.
+
+    Chaque projet (titre, description, image, lien) renforce le profil
+    public du prestataire et sa crédibilité auprès des clients.
+    """
+    if request.user.role != User.Role.PRESTATAIRE:
+        messages.error(request, 'Seul un prestataire peut gérer un portfolio.')
+        return redirect('demandes:catalogue')
+    if request.method == 'POST':
+        form = ProjetForm(request.POST, request.FILES)
+        if form.is_valid():
+            projet = form.save(commit=False)
+            projet.prestataire = request.user
+            projet.save()
+            messages.success(request, 'Projet ajouté à ton portfolio !')
+            return redirect('accounts:portfolio')
+    else:
+        form = ProjetForm()
+    return render(request, 'accounts/portfolio.html', {
+        'form': form,
+        'projets': request.user.portfolio.all(),
+    })
+
+
+@login_required
+def supprimer_projet(request, pk):
+    """Supprime un projet du portfolio du prestataire connecté."""
+    projet = get_object_or_404(Projet, pk=pk, prestataire=request.user)
+    projet.delete()
+    messages.success(request, 'Projet retiré de ton portfolio.')
+    return redirect('accounts:portfolio')
+
+
+def profil_prestataire(request, pk):
+    """Page publique du profil d'un prestataire (note, vérification, portfolio)."""
+    from apps.propositions.models import Mission
+
+    prestataire = get_object_or_404(User, pk=pk, role=User.Role.PRESTATAIRE)
+    return render(request, 'accounts/profil_prestataire.html', {
+        'prestataire': prestataire,
+        'projets': prestataire.portfolio.all(),
+        'nb_missions': prestataire.missions_prestataire.filter(
+            statut__in=[Mission.Statut.TERMINEE, Mission.Statut.CLOTUREE]
+        ).count(),
+    })
 
 
 @login_required

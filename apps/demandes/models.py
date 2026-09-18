@@ -49,3 +49,30 @@ class Demande(models.Model):
 
     def __str__(self):
         return self.titre
+
+
+class FavorisDemande(models.Model):
+    """Demande mise en favori par un prestataire (veille sur le catalogue).
+
+    Le prestataire signale les demandes qui l'intéressent pour les retrouver
+    facilement et être alerté de leur évolution.  Une même demande ne peut être
+    mise en favori qu'une seule fois par prestataire (contrainte d'unicité).
+    """
+
+    prestataire = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='favoris_demandes', verbose_name='Prestataire')
+    demande = models.ForeignKey(
+        Demande, on_delete=models.CASCADE,
+        related_name='favoris', verbose_name='Demande')
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Favori de demande'
+        verbose_name_plural = 'Favoris de demandes'
+        unique_together = ('prestataire', 'demande')
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        """Représentation lisible : prestataire + demande favorite."""
+        return f"{self.prestataire.username} → {self.demande.titre}"

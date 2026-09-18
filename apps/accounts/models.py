@@ -37,6 +37,12 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
     company_name = models.CharField(max_length=150, blank=True)
     ville = models.CharField(max_length=100, blank=True)
+    # Compétences du prestataire : catégories de services qu'il maîtrise
+    # (utilisées pour les alertes de nouvelles demandes et le profil public).
+    competences = models.ManyToManyField(
+        'demandes.Categorie', blank=True, related_name='prestataires_competents',
+        verbose_name='Compétences',
+    )
     bio = models.TextField(blank=True)
     # Avatar avec validation d'extension et de taille (max 5 Mo)
     avatar = models.ImageField(
@@ -102,6 +108,13 @@ class User(AbstractUser):
         if maintenant.month == 12:
             return maintenant.replace(year=maintenant.year + 1, month=1, day=1, hour=12)
         return maintenant.replace(month=maintenant.month + 1, day=1, hour=12)
+
+    def note_moyenne(self):
+        """Note moyenne (1–5) des évaluations reçues, ou ``None`` si aucune."""
+        notes = list(self.evaluations_recues.all())
+        if not notes:
+            return None
+        return round(sum(e.note for e in notes) / len(notes), 1)
 
 
 class Abonnement(models.Model):
@@ -175,3 +188,33 @@ class Notification(models.Model):
     def __str__(self):
         """Représentation lisible : destinataire et message."""
         return f"{self.destinataire.username}: {self.message}"
+
+
+class Projet(models.Model):
+    """Réalisation d'un prestataire affichée dans son portfolio public.
+
+    Le prestataire présente ses projets (site web, application, migration…)
+    avec une image, une description et un lien optionnel.  Le portfolio
+    valorise son sérieux auprès des clients et alimente la note de confiance.
+    """
+
+    prestataire = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='portfolio',
+        verbose_name='Prestataire')
+    titre = models.CharField(max_length=120, verbose_name='Titre du projet')
+    description = models.TextField(blank=True, verbose_name='Description')
+    image = models.ImageField(
+        upload_to='portfolio/', blank=True, null=True,
+        validators=[EXTENSIONS_AVATAR, valider_taille_avatar],
+        verbose_name='Image (optionnelle)',
+    )
+    url = models.URLField(blank=True, verbose_name='Lien externe (optionnel)')
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Projet (portfolio)'
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        """Représentation lisible : projet du prestataire."""
+        return f"{self.prestataire.username} — {self.titre}"

@@ -260,6 +260,23 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # ---------------------------------------------------------------------------
+# Emails transactionnels
+# ---------------------------------------------------------------------------
+# Si aucune variable SMTP n'est renseignée dans .env, le backend « console »
+# affiche les e-mails dans les logs du serveur (développement) — aucun envoi
+# réel et aucun échec métier. En production, renseigner EMAIL_HOST + comptes.
+if os.getenv('EMAIL_HOST'):
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+else:
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_FROM', 'TechConnect Bénin <no-reply@techconnect.bj>')
+
+# ---------------------------------------------------------------------------
 # Type d'auto-field par défaut
 # ---------------------------------------------------------------------------
 # Utilise BigInt au lieu de Int pour les clés primaires auto-incrémentées :

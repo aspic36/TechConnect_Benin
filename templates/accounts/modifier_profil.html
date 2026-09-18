@@ -14,16 +14,23 @@
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% for champ in form %}
-            <div class="form-group">
-                <label for="{{ champ.id_for_label }}">{{ champ.label }}</label>
-                {{ champ }}
-                {% if champ.errors %}
-                    <p class="form-error">{{ champ.errors|striptags }}</p>
-                {% endif %}
-            </div>
+            {% if champ.name == 'competences' and user.role != 'prestataire' %}
+                {# Compétences : réservées aux prestataires (alertes de nouvelles demandes) #}
+            {% else %}
+                <div class="form-group">
+                    <label for="{{ champ.id_for_label }}">{{ champ.label }}{% if champ.help_text %} <small style="opacity: 0.7; font-weight: 400;">({{ champ.help_text }})</small>{% endif %}</label>
+                    {{ champ }}
+                    {% if champ.errors %}
+                        <p class="form-error">{{ champ.errors|striptags }}</p>
+                    {% endif %}
+                </div>
+            {% endif %}
         {% endfor %}
         <div class="actions">
             <button type="submit" class="btn btn-accent btn-lg">💾 Enregistrer</button>
+            {% if user.role == 'prestataire' %}
+                <a class="btn btn-outline" href="{% url 'accounts:portfolio' %}">💼 Gérer mon portfolio</a>
+            {% endif %}
         </div>
     </form>
 </div>

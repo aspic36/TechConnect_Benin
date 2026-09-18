@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Categorie, Demande
+from .models import Categorie, Demande, FavorisDemande
 
 
 @admin.register(Categorie)
@@ -22,3 +22,11 @@ class DemandeAdmin(admin.ModelAdmin):
     search_fields = ('titre', 'description')
     # Requête optimisée : jointure sur client et catégorie en une seule requête
     list_select_related = ('client', 'categorie')
+
+
+@admin.register(FavorisDemande)
+class FavorisDemandeAdmin(admin.ModelAdmin):
+    """Administration des favoris de demandes des prestataires."""
+
+    list_display = ('prestataire', 'demande', 'date_creation')
+    list_select_related = ('prestataire', 'demande')

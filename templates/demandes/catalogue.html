@@ -3,17 +3,25 @@
 {% block content %}
 <div class="hero-mini">
     <h2>🔍 Catalogue des missions</h2>
-    <p>Toutes les demandes publiques ouvertes — filtre par catégorie ou recherche.</p>
+    <p>Toutes les demandes publiques ouvertes — filtre par catégorie, budget, ville ou à distance.</p>
 </div>
-<form method="get" class="filter-bar">
-    <input class="input-inline" type="text" name="q" value="{{ request.GET.q }}" placeholder="Rechercher un titre ou description…" style="flex: 1; min-width: 180px;">
+<form method="get" class="filter-bar" style="flex-wrap: wrap;">
+    <input class="input-inline" type="text" name="q" value="{{ q }}" placeholder="Rechercher un titre ou description…" style="flex: 2; min-width: 180px;">
     <select class="input-inline" name="categorie">
         <option value="">Toutes les catégories</option>
         {% for cat in categories %}
-            <option value="{{ cat.slug }}" {% if categorie_active == cat.slug %}selected{% endif %}>{{ cat.nom }}</option>
+            <option value="{{ cat.slug }}" {% if categorie_active == cat.slug %}selected{% endif %}>{{ cat.nom }} ({{ cat.nb }})</option>
         {% endfor %}
     </select>
+    <input class="input-inline" type="number" name="budget_min" value="{{ budget_min }}" placeholder="Budget min (FCFA)" min="0" style="max-width: 150px;">
+    <input class="input-inline" type="number" name="budget_max" value="{{ budget_max }}" placeholder="Budget max (FCFA)" min="0" style="max-width: 150px;">
+    <input class="input-inline" type="text" name="ville" value="{{ ville }}" placeholder="Ville" style="max-width: 140px;">
+    <label class="input-inline" style="display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
+        <input type="checkbox" name="a_distance" value="1" {% if a_distance_active %}checked{% endif %}>
+        🌍 À distance
+    </label>
     <button class="btn btn-outline" type="submit">Filtrer</button>
+    <a class="btn btn-ghost btn-sm" href="{% url 'demandes:catalogue' %}">Réinitialiser</a>
 </form>
 {% if user.role == 'prestataire' and quota is not None %}
     <div class="filter-bar" style="background: var(--indigo-50); border-color: #c7d2fe;">
@@ -56,11 +64,26 @@
                     <a class="btn btn-outline btn-sm" href="{% url 'demandes:detail_demande' demande.pk %}">Voir la mission</a>
                     {% if user.role == 'prestataire' %}
                         <a class="btn btn-accent btn-sm" href="{% url 'propositions:soumettre' demande.pk %}">Faire une proposition</a>
+                        <a class="btn btn-outline btn-sm" href="{% url 'demandes:basculer_favori' demande.pk %}?next={{ request.path }}">
+                            {% if demande.pk in favoris_ids %}⭐ Favori ✓{% else %}☆ En favori{% endif %}
+                        </a>
                     {% endif %}
                 </div>
             </div>
         {% endfor %}
     </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination">
+            {% if page_precedente %}
+                <a class="btn btn-outline btn-sm" href="{{ page_precedente }}">« Précédent</a>
+            {% endif %}
+            <span style="padding: 0 0.8rem;">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_suivante %}
+                <a class="btn btn-outline btn-sm" href="{{ page_suivante }}">Suivant »</a>
+            {% endif %}
+        </nav>
+    {% endif %}
 {% else %}
     <div class="empty">
         <div class="big">🔎</div>

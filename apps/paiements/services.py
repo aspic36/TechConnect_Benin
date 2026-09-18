@@ -11,6 +11,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.emails import envoyer_email
 from apps.accounts.notifications import creer_notification, notifier_staff
 from apps.propositions.models import Commission, Paiement
 
@@ -132,6 +133,15 @@ def confirmer_paiement(paiement):
         f'« {paiement.mission.demande.titre} » a été confirmé. '
         'Le solde te sera reversé à la clôture.',
         'mission', reverse('propositions:detail_mission', args=[paiement.mission.pk]))
+    envoyer_email(
+        [paiement.mission.client, paiement.mission.prestataire],
+        f'Paiement confirmé — {paiement.mission.demande.titre}',
+        f'Le paiement de <strong>{paiement.montant} FCFA</strong> sur la mission '
+        f'« {paiement.mission.demande.titre} » a été confirmé. '
+        'Le solde sera reversé au prestataire à la clôture de la mission.',
+        bouton='Voir la mission',
+        lien=reverse('propositions:detail_mission', args=[paiement.mission.pk]),
+    )
 
 
 def eclater_paiement(paiement):

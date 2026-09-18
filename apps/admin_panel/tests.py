@@ -205,6 +205,18 @@ class AbonnementBackOfficeTests(TestCase):
         notification = Notification.objects.get(destinataire=self.client_u)
         self.assertEqual(notification.type, 'demande')
 
+    def test_valider_demande_alerte_les_prestataires_competents(self):
+        from apps.demandes.models import Categorie
+        categorie = Categorie.objects.create(nom='Web', slug='web')
+        self.presta.competences.add(categorie)
+        demande = Demande.objects.create(
+            client=self.client_u, categorie=categorie, titre='À valider',
+            description='x', statut=Demande.Statut.EN_ATTENTE)
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:valider_demande', args=[demande.pk]))
+        self.assertTrue(Notification.objects.filter(
+            destinataire=self.presta, type='demande').exists())
+
     def test_confirmer_commission_notifie_le_prestataire(self):
         from apps.demandes.models import Categorie
         from apps.propositions.models import Commission, Mission, Proposition

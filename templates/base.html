@@ -30,6 +30,8 @@
                    href="{% url 'demandes:catalogue' %}">🔍 Catalogue</a>
                 <a class="sidebar-link {% if request.resolver_match.url_name in 'mes_propositions,soumettre' %}active{% endif %}"
                    href="{% url 'propositions:mes_propositions' %}">📤 Mes propositions</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'mes_favoris' %}active{% endif %}"
+                   href="{% url 'demandes:mes_favoris' %}">⭐ Mes favoris</a>
             {% endif %}
             <a class="sidebar-link {% if request.resolver_match.url_name in 'liste_missions,detail_mission' %}active{% endif %}"
                href="{% url 'propositions:liste_missions' %}">🚀 Missions</a>
@@ -38,6 +40,9 @@
                 <div class="sidebar-title">Abonnement</div>
                 <a class="sidebar-link {% if request.resolver_match.url_name == 'abonnement' %}active{% endif %}"
                    href="{% url 'accounts:abonnement' %}">⭐ Mon abonnement</a>
+                <div class="sidebar-title">Portfolio</div>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'portfolio' %}active{% endif %}"
+                   href="{% url 'accounts:portfolio' %}">💼 Mon portfolio</a>
             {% endif %}
 
             {% if user.is_staff %}

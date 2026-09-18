@@ -435,6 +435,22 @@ form ul > li { list-style: none; }
 /* Action row */
 .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.9rem; }
 
+/* Pagination du catalogue */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.6rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+}
+
+/* Portfolio & favoris (petites vignettes cohérentes avec le design system) */
+.portfolio-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.portfolio-card .card-text { font-size: 0.9rem; }
+.notes-etoiles { color: #f59e0b; letter-spacing: 1px; }
+
 /* ================= RESPONSIVE ================= */
 @media (max-width: 640px) {
     .navbar { justify-content: center; }

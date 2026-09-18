@@ -1,10 +1,10 @@
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from .forms import InscriptionForm
-from .models import Abonnement, Notification, User
+from .models import Abonnement, Notification, Projet, User
 
 
 class InscriptionTests(TestCase):
@@ -315,3 +315,98 @@ class NotificationTests(TestCase):
         self.client.get(reverse('accounts:marquer_lues'))
         self.client_u.refresh_from_db()
         self.assertTrue(Notification.objects.filter(destinataire=self.client_u).filter(est_lue=True).count() == 1)
+
+
+class PortfolioTests(TestCase):
+
+    def setUp(self):
+        self.presta = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+        self.client_ = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+
+    def test_page_portfolio_reservee_prestataire(self):
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:portfolio'))
+        self.assertRedirects(reponse, reverse('demandes:catalogue'))
+
+    def test_ajouter_projet_au_portfolio(self):
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.post(reverse('accounts:portfolio'), {
+            'titre': 'Site vitrine pour une PME',
+            'description': 'Réalisé en Django',
+            'url': 'https://example.com',
+        })
+        self.assertRedirects(reponse, reverse('accounts:portfolio'))
+        projet = Projet.objects.get(prestataire=self.presta)
+        self.assertEqual(projet.titre, 'Site vitrine pour une PME')
+
+    def test_supprimer_projet(self):
+        projet = Projet.objects.create(
+            prestataire=self.presta, titre='Ancien projet')
+        self.client.login(username='presta', password='Passw0rd!')
+        self.client.get(reverse('accounts:supprimer_projet', args=[projet.pk]))
+        self.assertFalse(Projet.objects.filter(pk=projet.pk).exists())
+
+    def test_page_profil_public_prestataire(self):
+        from apps.demandes.models import Categorie
+        categorie = Categorie.objects.create(nom='Web', slug='web')
+        self.presta.competences.add(categorie)
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('accounts:profil_prestataire', args=[self.presta.pk]))
+        self.assertEqual(reponse.status_code, 200)
+        self.assertContains(reponse, 'Web')
+
+    def test_note_moyenne_calculee(self):
+        from apps.demandes.models import Categorie, Demande
+        from apps.propositions.models import Evaluation, Mission, Proposition
+        categorie = Categorie.objects.create(nom='Web', slug='web')
+        demande = Demande.objects.create(
+            client=self.client_, categorie=categorie, titre='Site',
+            description='x', statut=Demande.Statut.EN_COURS)
+        proposition = Proposition.objects.create(
+            demande=demande, prestataire=self.presta, prix=50000,
+            delais_jours=5, statut=Proposition.Statut.ACCEPTEE)
+        mission = Mission.objects.create(
+            demande=demande, proposition=proposition, client=self.client_,
+            prestataire=self.presta, statut=Mission.Statut.TERMINEE)
+        Evaluation.objects.create(mission=mission, auteur=self.client_, cible=self.presta, note=5)
+        Evaluation.objects.create(mission=mission, auteur=self.client_, cible=self.presta, note=3)
+        self.assertEqual(self.presta.note_moyenne(), 4.0)
+
+    def test_competences_modifiables_depuis_le_profil(self):
+        from apps.demandes.models import Categorie
+        categorie = Categorie.objects.create(nom='Mobile', slug='mobile')
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.post(reverse('accounts:modifier_profil'), {
+            'phone': '97000333',
+            'ville': 'Cotonou',
+            'competences': [categorie.pk],
+        })
+        self.assertRedirects(reponse, reverse('accounts:profil'))
+        self.assertEqual(list(self.presta.competences.all()), [categorie])
+
+
+class EmailsTransactionnelsTests(TestCase):
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_inscription_envoie_un_email_de_bienvenue(self):
+        from django.core import mail
+        reponse = self.client.post(reverse('accounts:inscription'), {
+            'username': 'avecemail',
+            'email': 'nouveau@mail.fr',
+            'password1': 'Passw0rd!',
+            'password2': 'Passw0rd!',
+            'role': User.Role.CLIENT,
+            'phone': '97000444',
+        })
+        self.assertEqual(reponse.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Bienvenue sur TechConnect Bénin', mail.outbox[0].subject)
+        self.assertEqual(mail.outbox[0].to, ['nouveau@mail.fr'])
+
+    def test_envoyer_email_ignore_les_utilisateurs_sans_adresse(self):
+        from .emails import envoyer_email
+        sans_email = User.objects.create_user(
+            username='sansmail', password='Passw0rd!', role=User.Role.CLIENT)
+        self.assertEqual(envoyer_email([sans_email], 'Sujet', 'Contenu'), 0)

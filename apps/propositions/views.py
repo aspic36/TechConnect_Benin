@@ -15,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.emails import envoyer_email
 from apps.accounts.models import Notification
 from apps.accounts.notifications import creer_notification, notifier_staff
 from apps.demandes.models import Demande
@@ -270,6 +271,14 @@ def signaler_litige(request, pk):
                 'L’équipe TechConnect traite votre dossier.',
                 Notification.Type.LITIGE,
                 reverse('propositions:detail_mission', args=[mission.pk]),
+            )
+            envoyer_email(
+                [autre, request.user],
+                f'Litige signalé — {mission.demande.titre}',
+                f'Un litige a été signalé sur la mission « '
+                f'<strong>{mission.demande.titre}</strong> » par '
+                f'{request.user.username}. L\'équipe TechConnect va examiner '
+                'votre dossier.',
             )
             notifier_staff(
                 f'Nouveau litige à traiter : « {mission.demande.titre} » '
