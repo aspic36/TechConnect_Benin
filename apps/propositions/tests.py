@@ -8,7 +8,7 @@ from apps.accounts.models import Notification, User
 from apps.demandes.models import Categorie, Demande
 from apps.paiements.providers.base import ResultatCollecte, ResultatReversement
 
-from .models import Commission, Evaluation, Mission, Paiement, Proposition
+from .models import Commission, Evaluation, Litige, Mission, Paiement, Proposition
 
 
 class BaseTests(TestCase):
@@ -409,3 +409,58 @@ class NotificationDeclenchementTests(BaseTests):
         self.client.get(reverse('propositions:accepter', args=[proposition.pk]))
         self.assertTrue(Notification.objects.filter(
             destinataire=self.presta, type='mission').exists())
+
+
+class LitigeTests(BaseTests):
+    """Le signalement d'un litige par un participant, avec preuve éventuelle."""
+
+    def _signaler(self, username='client', mission=None, **extra):
+        self.client.login(username=username, password='Passw0rd!')
+        data = {'motif': 'Travail non livré à la date prévue'}
+        data.update(extra)
+        return self.client.post(
+            reverse('propositions:signaler_litige', args=[(mission or self._mission()).pk]), data)
+
+    def test_client_signe_un_litige_et_mission_passe_en_litige(self):
+        User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        reponse = self._signaler()
+        litige = Litige.objects.get()
+        self.assertEqual(reponse.status_code, 302)
+        self.assertEqual(litige.signaleur, self.client_u)
+        self.assertEqual(litige.statut, Litige.Statut.OUVERT)
+        # La mission bascule en litige et la demande devient mission_active.
+        self.assertEqual(litige.mission.statut, Mission.Statut.LITIGE)
+        # L'autre partie est notifiée, l'équipe reçoit une alerte.
+        self.assertTrue(Notification.objects.filter(
+            destinataire=self.presta, type='litige').exists())
+        self.assertTrue(Notification.objects.filter(
+            type='litige', message__contains='à traiter').exists())
+
+    def test_non_participant_ne_peut_pas_signer(self):
+        reponse = self._signaler(username='presta2')
+        self.assertEqual(reponse.status_code, 302)
+        self.assertEqual(Litige.objects.count(), 0)
+
+    def test_second_signalement_refuse_si_litige_deja_ouvert(self):
+        User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        mission = self._mission()
+        self._signaler(username='client', mission=mission)
+        # Un second signalement (même mission) est refusé.
+        self._signaler(username='presta', mission=mission)
+        self.assertEqual(Litige.objects.count(), 1)
+
+    def test_signalement_refuse_si_mission_cloturee(self):
+        mission = self._mission()
+        mission.statut = Mission.Statut.CLOTUREE
+        mission.save()
+        self.client.login(username='presta', password='Passw0rd!')
+        reponse = self.client.post(
+            reverse('propositions:signaler_litige', args=[mission.pk]),
+            {'motif': 'Un problème'},
+        )
+        self.assertEqual(reponse.status_code, 302)
+        self.assertEqual(Litige.objects.count(), 0)

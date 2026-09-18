@@ -20,6 +20,7 @@ urlpatterns = [
     path('missions/<int:pk>/', views.detail_mission, name='detail_mission'),
     path('missions/<int:pk>/clore/', views.clore_mission, name='clore'),
     path('missions/<int:pk>/evaluer/', views.evaluer_mission, name='evaluer'),
+    path('missions/<int:pk>/litige/', views.signaler_litige, name='signaler_litige'),
     path('missions/<int:pk>/paiement/', views.initier_paiement, name='paiement'),
     path('missions/<int:pk>/paiement/verifier/', views.verifier_paiement, name='verifier_paiement'),
 ]

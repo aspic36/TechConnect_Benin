@@ -97,6 +97,27 @@
 </div>
 {% endif %}
 
+{% if mission.litige %}
+<div class="card" style="border-color: var(--danger);">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+        <h3 class="card-title">⚖️ Litige en cours</h3>
+        <span class="badge {{ mission.litige.statut }}">{{ mission.litige.get_statut_display }}</span>
+    </div>
+    <p class="card-text">Signalé par <strong>{{ mission.litige.signaleur.username }}</strong> : « {{ mission.litige.motif }} »</p>
+    {% if mission.litige.piece_jointe %}
+        <p class="card-meta">📎 <a href="{{ mission.litige.piece_jointe.url }}" target="_blank" rel="noopener">Voir la pièce jointe</a></p>
+    {% endif %}
+    {% if mission.litige.statut == 'mediation' %}
+        <p class="card-meta">🤝 Médiation engagée : échange avec l’autre partie dans la messagerie.</p>
+    {% elif mission.litige.statut == 'clos' %}
+        <p class="card-meta">
+            ✅ {{ mission.litige.get_en_faveur_display|default:'Litige clôturé' }}
+            {% if mission.litige.decision %} — {{ mission.litige.decision }}{% endif %}
+        </p>
+    {% endif %}
+</div>
+{% endif %}
+
 <div class="actions" style="margin-top: 1.2rem;">
     <a class="btn btn-lg" href="{% url 'messagerie:fil' mission.pk %}">💬 Ouvrir la messagerie</a>
     {% if mission.statut == 'en_cours' and mission_payee %}
@@ -107,6 +128,11 @@
     {% endif %}
     {% if mission.statut == 'terminee' %}
         <a class="btn btn-accent" href="{% url 'propositions:evaluer' mission.pk %}">★ Évaluer la mission</a>
+    {% endif %}
+    {% if user in participants and mission.statut == 'en_cours' or user in participants and mission.statut == 'terminee' %}
+        {% if not mission.litige %}
+            <a class="btn btn-outline" href="{% url 'propositions:signaler_litige' mission.pk %}">🚨 Signaler un litige</a>
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

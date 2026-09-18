@@ -11,15 +11,16 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Avg, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import Abonnement, Notification, User
 from apps.accounts.notifications import creer_notification
-from apps.demandes.models import Demande
+from apps.demandes.models import Categorie, Demande
 from apps.paiements.services import confirmer_paiement as confirmer_paiement_service
-from apps.propositions.models import Commission, Mission, Paiement
+from apps.propositions.models import Commission, Litige, Mission, Paiement
 
 
 @staff_member_required
@@ -41,6 +42,9 @@ def dashboard(request):
         'commissions_en_attente': Commission.objects.filter(
             statut=Commission.Statut.EN_ATTENTE
         ).count(),
+        'revenus_encaisses': Commission.objects.filter(
+            statut=Commission.Statut.PAYEE
+        ).aggregate(somme=Sum('montant'))['somme'] or 0,
         'paiements_a_confirmer': Paiement.objects.filter(
             statut=Paiement.Statut.EN_ATTENTE
         ).count(),
@@ -49,6 +53,73 @@ def dashboard(request):
         ).count(),
     }
     return render(request, 'admin_panel/dashboard.html', contexte)
+
+
+@staff_member_required
+def statistiques(request):
+    """Page de statistiques avancées : revenus, missions par catégorie, top prestataires."""
+    from django.db.models import Count, Q
+
+    # --- Revenus plateforme (commissions retenues sur les missions clôturées) ---
+    commissions_payees = Commission.objects.filter(statut=Commission.Statut.PAYEE)
+    commissions_attente = Commission.objects.filter(statut=Commission.Statut.EN_ATTENTE)
+    revenus_encaisses = commissions_payees.aggregate(somme=Sum('montant'))['somme'] or 0
+    revenus_attente = commissions_attente.aggregate(somme=Sum('montant'))['somme'] or 0
+    nb_commissions_payees = commissions_payees.count()
+
+    # --- Volume d'activité global ---
+    missions_terminees = Mission.objects.filter(
+        statut__in=[Mission.Statut.TERMINEE, Mission.Statut.CLOTUREE]
+    )
+    ca_total = sum(
+        m.proposition.prix for m in missions_terminees.select_related('proposition')
+        if m.proposition
+    )
+    panier_moyen = round(ca_total / missions_terminees.count()) if missions_terminees.exists() else 0
+
+    # --- Missions par catégorie (toutes + clôturées) ---
+    categories = Categorie.objects.annotate(
+        nb_missions=Count('demandes__mission'),
+        nb_terminees=Count(
+            'demandes__mission',
+            filter=Q(demandes__mission__statut__in=[
+                Mission.Statut.TERMINEE, Mission.Statut.CLOTUREE]),
+        ),
+    ).order_by('-nb_missions')
+    max_missions = max((c.nb_missions for c in categories), default=0)
+
+    # --- Top prestataires (missions, note moyenne, chiffre d'affaires) ---
+    top_prestataires = []
+    for prestataire in User.objects.filter(role=User.Role.PRESTATAIRE).prefetch_related(
+            'missions_prestataire', 'evaluations_recues'):
+        missions = [m for m in prestataire.missions_prestataire.all()
+                    if m.statut in (Mission.Statut.TERMINEE, Mission.Statut.CLOTUREE)]
+        if not missions:
+            continue
+        ca = sum(m.proposition.prix for m in missions if m.proposition)
+        notes = [e.note for e in prestataire.evaluations_recues.all()]
+        top_prestataires.append({
+            'prestataire': prestataire,
+            'nb_missions': len(missions),
+            'ca': ca,
+            'note_moyenne': round(sum(notes) / len(notes), 1) if notes else None,
+        })
+    top_prestataires.sort(key=lambda x: (x['nb_missions'], x['ca']), reverse=True)
+    top_prestataires = top_prestataires[:5]
+
+    return render(request, 'admin_panel/statistiques.html', {
+        'revenus_encaisses': revenus_encaisses,
+        'revenus_attente': revenus_attente,
+        'nb_commissions_payees': nb_commissions_payees,
+        'nb_missions_terminees': missions_terminees.count(),
+        'missions_en_cours': Mission.objects.filter(statut=Mission.Statut.EN_COURS).count(),
+        'missions_litiges': Mission.objects.filter(statut=Mission.Statut.LITIGE).count(),
+        'ca_total': ca_total,
+        'panier_moyen': panier_moyen,
+        'categories': categories,
+        'max_missions': max_missions,
+        'top_prestataires': top_prestataires,
+    })
 
 
 @staff_member_required
@@ -113,23 +184,68 @@ def refuser_demande(request, pk):
 
 @staff_member_required
 def liste_litiges(request):
-    """Liste les missions en litige nécessitant l'intervention du back-office."""
-    litiges = Mission.objects.filter(statut=Mission.Statut.LITIGE).select_related(
-        'demande', 'client', 'prestataire'
-    )
-    return render(request, 'admin_panel/litiges.html', {'litiges': litiges})
+    """Liste les missions en litige avec le motif et la pièce jointe signalés."""
+    missions = Mission.objects.filter(statut=Mission.Statut.LITIGE).select_related(
+        'demande', 'client', 'prestataire', 'litige', 'litige__signaleur'
+    ).order_by('-litige__date_creation')
+    # Chaque fonds reste bloqué : l'équipe décide in fine du reversement.
+    return render(request, 'admin_panel/litiges.html', {'litiges': missions})
 
 
 @staff_member_required
-def clore_litige(request, pk):
-    """Clôture un litige : bascule la mission et sa demande en statut clôturée."""
-    mission = Mission.objects.get(pk=pk)
+def passer_mediation(request, pk):
+    """Ouvre une médiation : invite les deux parties à échanger dans la messagerie."""
+    litige = get_object_or_404(Litige, pk=pk)
+    if litige.statut == Litige.Statut.CLOS:
+        messages.info(request, 'Ce litige est déjà clos.')
+        return redirect('admin_panel:litiges')
+    litige.statut = Litige.Statut.MEDIATION
+    litige.save(update_fields=['statut'])
+    creer_notification(
+        [litige.mission.client, litige.mission.prestataire],
+        f'Médiation ouverte sur « {litige.mission.demande.titre} ». '
+        'Échangez avec l’autre partie dans la messagerie pour trouver un accord.',
+        Notification.Type.LITIGE,
+        reverse('propositions:detail_mission', args=[litige.mission.pk]),
+    )
+    messages.success(request, f'Médiation engagée — {litige.mission.demande.titre}.')
+    return redirect('admin_panel:litiges')
+
+
+@staff_member_required
+def resoudre_litige(request, pk):
+    """Résout un litige : clôture la mission et sa demande, notifie la décision."""
+    litige = get_object_or_404(Litige, pk=pk)
+    if litige.statut == Litige.Statut.CLOS:
+        messages.info(request, 'Ce litige est déjà clos.')
+        return redirect('admin_panel:litiges')
+    decision = request.POST.get('decision', '').strip()
+    en_faveur = request.POST.get('en_faveur', '')
+    if en_faveur not in Litige.EnFaveur.values:
+        en_faveur = ''
+    litige.decision = decision
+    litige.en_faveur = en_faveur
+    litige.statut = Litige.Statut.CLOS
+    litige.date_decision = timezone.now()
+    litige.save()
+    # La mission et sa demande sont clôturées définitivement.
+    mission = litige.mission
     mission.statut = Mission.Statut.CLOTUREE
-    mission.save()
-    # La demande associée est clôturée en même temps que la mission.
+    mission.save(update_fields=['statut'])
     mission.demande.statut = Demande.Statut.CLOTUREE
-    mission.demande.save()
-    messages.success(request, f'Litige clôturé : {mission.demande.titre}')
+    mission.demande.save(update_fields=['statut'])
+    message = (
+        f'Le litige sur « {mission.demande.titre} » est résolu. '
+        f'Décision : {litige.get_en_faveur_display() or "avis de l’équipe"}. '
+        f'{decision or "Merci de votre confiance."}'
+    )
+    creer_notification(
+        [mission.client, mission.prestataire],
+        message,
+        Notification.Type.LITIGE,
+        reverse('propositions:detail_mission', args=[mission.pk]),
+    )
+    messages.success(request, f'Litige résolu : {mission.demande.titre}.')
     return redirect('admin_panel:litiges')
 
 

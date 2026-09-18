@@ -273,3 +273,108 @@ class ConfirmationPaiementTests(TestCase):
         self.client.login(username='staff', password='Passw0rd!')
         reponse = self.client.get(reverse('admin_panel:dashboard'))
         self.assertEqual(reponse.context['paiements_a_confirmer'], 1)
+
+
+class LitigeBackOfficeTests(TestCase):
+    """Médiation et résolution des litiges dans le back-office."""
+
+    def setUp(self):
+        from apps.demandes.models import Categorie
+        from apps.propositions.models import Litige, Mission, Proposition
+        self.staff = User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        self.client_u = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+        self.presta = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+        categorie = Categorie.objects.create(nom='Web', slug='web')
+        demande = Demande.objects.create(
+            client=self.client_u, categorie=categorie, titre='Site',
+            description='x', statut=Demande.Statut.MISSION_ACTIVE)
+        proposition = Proposition.objects.create(
+            demande=demande, prestataire=self.presta,
+            prix=100000, delais_jours=10, statut=Proposition.Statut.ACCEPTEE)
+        self.mission = Mission.objects.create(
+            demande=demande, proposition=proposition,
+            client=self.client_u, prestataire=self.presta,
+            statut=Mission.Statut.LITIGE)
+        self.litige = Litige.objects.create(
+            mission=self.mission, signaleur=self.client_u,
+            motif='Travail non terminé')
+
+    def test_liste_litiges_expose_le_motif(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:litiges'))
+        litige = reponse.context['litiges'][0].litige
+        self.assertEqual(litige.motif, 'Travail non terminé')
+
+    def test_passer_mediation_notifie_les_parties(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.get(reverse('admin_panel:mediation', args=[self.litige.pk]))
+        self.litige.refresh_from_db()
+        self.assertEqual(self.litige.statut, 'mediation')
+        for dest in (self.client_u, self.presta):
+            self.assertTrue(Notification.objects.filter(
+                destinataire=dest, type='litige').exists())
+
+    def test_resoudre_litige_cloture_mission_demande_et_notifie(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        self.client.post(
+            reverse('admin_panel:resoudre_litige', args=[self.litige.pk]),
+            {'en_faveur': 'client', 'decision': 'Remboursement du client.'},
+        )
+        self.litige.refresh_from_db()
+        self.mission.refresh_from_db()
+        self.mission.demande.refresh_from_db()
+        self.assertEqual(self.litige.statut, 'clos')
+        self.assertEqual(self.litige.en_faveur, 'client')
+        self.assertEqual(self.mission.statut, 'cloturee')
+        self.assertEqual(self.mission.demande.statut, 'cloturee')
+        for dest in (self.client_u, self.presta):
+            self.assertTrue(Notification.objects.filter(
+                destinataire=dest, type='litige').exists())
+
+
+class StatistiquesTests(TestCase):
+    """Page de statistiques avancées du back-office."""
+
+    def setUp(self):
+        from apps.demandes.models import Categorie
+        from apps.propositions.models import Commission, Mission, Proposition
+        self.staff = User.objects.create_user(
+            username='staff', password='Passw0rd!',
+            role=User.Role.CLIENT, is_staff=True)
+        self.client_u = User.objects.create_user(
+            username='client', password='Passw0rd!', role=User.Role.CLIENT)
+        self.presta = User.objects.create_user(
+            username='presta', password='Passw0rd!', role=User.Role.PRESTATAIRE)
+        self.categorie = Categorie.objects.create(nom='Web', slug='web')
+        demande = Demande.objects.create(
+            client=self.client_u, categorie=self.categorie, titre='Site',
+            description='x', statut=Demande.Statut.CLOTUREE)
+        proposition = Proposition.objects.create(
+            demande=demande, prestataire=self.presta,
+            prix=200000, delais_jours=10, statut=Proposition.Statut.ACCEPTEE)
+        mission = Mission.objects.create(
+            demande=demande, proposition=proposition,
+            client=self.client_u, prestataire=self.presta,
+            statut=Mission.Statut.TERMINEE)
+        Commission.objects.create(
+            mission=mission, montant=10000,
+            statut=Commission.Statut.PAYEE, date_limite=timezone.now())
+
+    def test_statistiques_reserve_au_staff(self):
+        self.client.login(username='client', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:statistiques'))
+        self.assertNotEqual(reponse.status_code, 200)
+
+    def test_statistiques_revenus_categories_et_top_prestataires(self):
+        self.client.login(username='staff', password='Passw0rd!')
+        reponse = self.client.get(reverse('admin_panel:statistiques'))
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(reponse.context['revenus_encaisses'], 10000)
+        self.assertEqual(reponse.context['nb_missions_terminees'], 1)
+        self.assertEqual(reponse.context['categories'][0].nb_missions, 1)
+        self.assertEqual(len(reponse.context['top_prestataires']), 1)
+        self.assertEqual(reponse.context['top_prestataires'][0]['ca'], 200000)

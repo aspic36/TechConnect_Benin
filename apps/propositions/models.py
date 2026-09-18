@@ -3,12 +3,15 @@ Modèles de l'app propositions.
 
 Définit les entités métier liées au cycle de vie d'une mission :
 Proposition (offre d'un prestataire), Mission (travail lancé),
-Évaluation (note 1-5), Paiement (accord direct MVP) et Commission
-(part de la plateforme due par le prestataire à la clôture).
+Évaluation (note 1-5), Paiement (escrow Mobile Money), Commission
+(part de la plateforme retenue à la clôture) et Litige (désaccord
+entre les deux parties, avec médiation du back-office).
 """
 
 from django.conf import settings
 from django.db import models
+
+from .validators import EXTENSIONS_PIECE, valider_taille_piece
 
 
 class Proposition(models.Model):
@@ -168,3 +171,47 @@ class Commission(models.Model):
         """Indique si la commission est en attente ET passée à sa date limite."""
         from django.utils import timezone
         return self.statut == self.Statut.EN_ATTENTE and timezone.now() > self.date_limite
+
+
+class Litige(models.Model):
+    """Désaccord signalé sur une mission par le client ou le prestataire.
+
+    Le litige est immédiatement visible du back-office (motif + pièce jointe
+    éventuelle) qui peut ouvrir une médiation (invitation des deux parties
+    à échanger dans la messagerie) puis le résoudre : la mission et sa
+    demande passent alors en « clôturée » et une décision est notifiée.
+    """
+
+    class Statut(models.TextChoices):
+        """État du litige : ouvert, en médiation ou clos."""
+        OUVERT = 'ouvert', 'Ouvert'
+        MEDIATION = 'mediation', 'Médiation'
+        CLOS = 'clos', 'Clos'
+
+    class EnFaveur(models.TextChoices):
+        """Décision finale : fonds reversés au client, au prestataire ou partagés."""
+        CLIENT = 'client', 'En faveur du client'
+        PRESTATAIRE = 'prestataire', 'En faveur du prestataire'
+        PARTAGE = 'partage', 'Partage entre les deux parties'
+
+    mission = models.OneToOneField(Mission, on_delete=models.CASCADE, related_name='litige')
+    signaleur = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='litiges_signales')
+    motif = models.TextField(verbose_name='Motif du litige')
+    piece_jointe = models.FileField(
+        upload_to='litiges/', blank=True, null=True,
+        verbose_name='Pièce jointe (preuve)',
+        validators=[EXTENSIONS_PIECE, valider_taille_piece])
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.OUVERT)
+    en_faveur = models.CharField(max_length=20, choices=EnFaveur.choices, blank=True)
+    decision = models.TextField(blank=True, verbose_name='Décision de l’équipe')
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_decision = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Litige'
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        """Représentation lisible : signaleur et titre de la mission."""
+        return f"Litige {self.mission.demande.titre} ({self.get_statut_display()})"

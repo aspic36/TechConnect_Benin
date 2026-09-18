@@ -21,8 +21,8 @@ from apps.demandes.models import Demande
 from apps.paiements import services
 from apps.paiements.providers.fedapay import ErreurFedaPay, PaiementNonAutorise
 
-from .forms import EvaluationForm, PropositionForm
-from .models import Commission, Evaluation, Mission, Paiement, Proposition
+from .forms import EvaluationForm, PropositionForm, SignalerLitigeForm
+from .models import Commission, Evaluation, Litige, Mission, Paiement, Proposition
 
 
 @login_required
@@ -155,6 +155,7 @@ def detail_mission(request, pk):
         return redirect('propositions:liste_missions')
     return render(request, 'propositions/detail_mission.html', {
         'mission': mission,
+        'participants': (mission.client, mission.prestataire),
         'reste_a_payer': services.prix_a_payer(mission),
         'mission_payee': services.mission_payee(mission),
     })
@@ -234,6 +235,53 @@ def evaluer_mission(request, pk):
     else:
         form = EvaluationForm()
     return render(request, 'propositions/evaluer.html', {'form': form, 'mission': mission, 'cible': cible})
+
+
+@login_required
+def signaler_litige(request, pk):
+    """Permet au client ou au prestataire de signaler un litige sur une mission."""
+    mission = get_object_or_404(Mission, pk=pk)
+    # Seuls les deux participants de la mission peuvent signaler un litige.
+    if request.user not in (mission.client, mission.prestataire):
+        messages.error(request, 'Seuls les participants de la mission peuvent signaler un litige.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    # On ne signale un litige que sur une mission en cours ou terminée.
+    if mission.statut not in (Mission.Statut.EN_COURS, Mission.Statut.TERMINEE):
+        messages.warning(request, 'Le signalement d’un litige n’est plus possible sur cette mission.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    # Un seul litige ouvert par mission.
+    if hasattr(mission, 'litige'):
+        messages.info(request, 'Un litige est déjà ouvert sur cette mission.')
+        return redirect('propositions:detail_mission', pk=mission.pk)
+    if request.method == 'POST':
+        form = SignalerLitigeForm(request.POST, request.FILES)
+        if form.is_valid():
+            litige = form.save(commit=False)
+            litige.mission = mission
+            litige.signaleur = request.user
+            litige.save()
+            mission.statut = Mission.Statut.LITIGE
+            mission.save(update_fields=['statut'])
+            # L'autre partie est informée ; l'équipe reçoit une alerte back-office.
+            autre = mission.prestataire if request.user == mission.client else mission.client
+            creer_notification(
+                [autre],
+                f'Un litige a été signalé sur « {mission.demande.titre} ». '
+                'L’équipe TechConnect traite votre dossier.',
+                Notification.Type.LITIGE,
+                reverse('propositions:detail_mission', args=[mission.pk]),
+            )
+            notifier_staff(
+                f'Nouveau litige à traiter : « {mission.demande.titre} » '
+                f'({mission.get_statut_display()}).',
+                Notification.Type.LITIGE,
+                reverse('admin_panel:litiges'),
+            )
+            messages.success(request, 'Litige signalé. L’équipe va examiner votre dossier.')
+            return redirect('propositions:detail_mission', pk=mission.pk)
+    else:
+        form = SignalerLitigeForm()
+    return render(request, 'propositions/signaler_litige.html', {'form': form, 'mission': mission})
 
 
 @login_required

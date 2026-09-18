@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Signaler un litige — {{ mission.demande.titre }}{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <h2 style="margin: 0;">⚖️ Signaler un litige</h2>
+    <p>Mission : <strong>{{ mission.demande.titre }}</strong></p>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Décris le problème</h3>
+    <p class="card-text">
+        Explique clairement ce qui ne va pas (travail non livré, livré hors délais,
+        qualité non conforme…). Tu peux joindre une <strong>preuve</strong> (PDF ou
+        image, 5 Mo maximum). L'équipe TechConnect examine le dossier, peut engager
+        une <strong>médiation</strong> entre les deux parties, puis rend une décision.
+    </p>
+    <form method="post" enctype="multipart/form-data" class="mt-2">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="actions">
+            <button type="submit" class="btn btn-danger">🚨 Signaler le litige</button>
+            <a class="btn btn-ghost" href="{% url 'propositions:detail_mission' mission.pk %}">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

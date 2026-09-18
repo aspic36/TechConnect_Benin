@@ -156,6 +156,7 @@ class Notification(models.Model):
         COMMISSION = 'commission', 'Commission'
         MISSION = 'mission', 'Mission'
         DEMANDE = 'demande', 'Demande'
+        LITIGE = 'litige', 'Litige'
         SYSTEME = 'systeme', 'Système'
 
     destinataire = models.ForeignKey(

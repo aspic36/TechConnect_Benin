@@ -73,6 +73,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Formatage convivial des nombres (intcomma pour les montants FCFA).
+    'django.contrib.humanize',
     'apps.accounts',
     'apps.demandes',
     'apps.propositions',

@@ -6,25 +6,65 @@
         <h2 style="margin: 0;">Gestion des litiges</h2>
         <span class="badge litige">{{ litiges|length }}</span>
     </div>
-    <p>Missions signalées comme litige par un participant.</p>
+    <p>Dossiers signalés par un participant (client ou prestataire). Chaque litige expose le motif,
+        la pièce jointe éventuelle, et peut passer par une médiation avant la décision finale.</p>
 </div>
 
 {% if litiges %}
-    {% for litige in litiges %}
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+    {% for m in litiges %}
+        {% with l=m.litige %}
+        <div class="card" style="border-color: {% if l.statut == 'clos' %}var(--success){% elif l.statut == 'mediation' %}var(--accent){% else %}var(--danger){% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem; flex-wrap: wrap;">
                 <div>
-                    <h3 class="card-title" style="margin: 0;">{{ litige.demande.titre }}</h3>
+                    <h3 class="card-title" style="margin: 0;">{{ m.demande.titre }}
+                        <span class="badge {{ l.statut }}">{{ l.get_statut_display }}</span>
+                    </h3>
                     <p class="card-meta">
-                        Client : {{ litige.client.username }} · Prestataire : {{ litige.prestataire.username }}
+                        Client : {{ m.client.username }} · Prestataire : {{ m.prestataire.username }}
+                        · Signalé par <strong>{{ l.signaleur.username }}</strong>
                     </p>
                     <p class="card-meta">
-                        Proposition : <span class="tag emerald">💰 {{ litige.proposition.prix|default:'—' }} FCFA</span>
+                        Proposition : <span class="tag emerald">💰 {{ l.mission.proposition.prix|default:'—' }} FCFA</span>
+                        · Montant bloqué en escrow
                     </p>
+                    <p class="card-text" style="margin-top: 0.5rem;">📝 <em>{{ l.motif }}</em></p>
+                    {% if l.piece_jointe %}
+                        <p class="card-meta">
+                            📎 <a href="{{ l.piece_jointe.url }}" target="_blank" rel="noopener">Voir la pièce jointe</a>
+                        </p>
+                    {% endif %}
                 </div>
-                <a class="btn btn-accent btn-sm" href="{% url 'admin_panel:clore_litige' litige.pk %}">✓ Clôturer le litige</a>
             </div>
+            {% if l.statut != 'clos' %}
+            <div style="display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; margin-top: 0.8rem;">
+                <a class="btn btn-outline btn-sm" href="{% url 'messagerie:fil' m.pk %}">💬 Voir la messagerie</a>
+                {% if l.statut != 'mediation' %}
+                    <a class="btn btn-accent btn-sm" href="{% url 'admin_panel:mediation' l.pk %}">🤝 Engager la médiation</a>
+                {% else %}
+                    <span class="badge acceptee">Médiation en cours — inviter les parties à échanger</span>
+                {% endif %}
+                <form method="post" action="{% url 'admin_panel:resoudre_litige' l.pk %}" style="display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; flex: 1; justify-content: flex-end;">
+                    {% csrf_token %}
+                    <select name="en_faveur" required style="padding: 0.45rem; border: 1px solid var(--border); border-radius: 8px;">
+                        <option value="" disabled selected>Décision…</option>
+                        <option value="client">En faveur du client</option>
+                        <option value="prestataire">En faveur du prestataire</option>
+                        <option value="partage">Partage des fonds</option>
+                    </select>
+                    <input type="text" name="decision" placeholder="Décision de l'équipe…" required
+                           style="padding: 0.45rem; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 160px;">
+                    <button class="btn btn-success btn-sm" type="submit">✓ Résoudre</button>
+                </form>
+            </div>
+            {% else %}
+                <p class="card-text" style="margin-top: 0.6rem;">
+                    ✅ <strong>{{ l.get_en_faveur_display|default:'Litige clôturé' }}</strong>
+                    {% if l.decision %} — {{ l.decision }}{% endif %}
+                    <span class="card-meta"> · décision du {{ l.date_decision|date:'d/m/Y H:i' }}</span>
+                </p>
+            {% endif %}
         </div>
+        {% endwith %}
     {% endfor %}
 {% else %}
     <div class="empty">

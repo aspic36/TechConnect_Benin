@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Statistiques — Back-office{% endblock %}
+{% block content %}
+<div class="hero-mini">
+    <h2 style="margin: 0;">📈 Statistiques avancées</h2>
+    <p>Revenus de la plateforme, activité par catégorie et top prestataires.</p>
+</div>
+
+<div class="stat-grid">
+    <div class="stat"><div class="stat-value" style="color: var(--success);">{{ revenus_encaisses|intcomma }}</div><div class="stat-label">FCFA encaissés (commissions)</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--accent);">{{ revenus_attente|intcomma }}</div><div class="stat-label">FCFA en attente</div></div>
+    <div class="stat"><div class="stat-value">{{ nb_commissions_payees }}</div><div class="stat-label">Commissions payées</div></div>
+    <div class="stat"><div class="stat-value">{{ nb_missions_terminees }}</div><div class="stat-label">Missions clôturées</div></div>
+    <div class="stat"><div class="stat-value">{{ missions_en_cours }}</div><div class="stat-label">Missions en cours</div></div>
+    <div class="stat"><div class="stat-value" style="color: var(--danger);">{{ missions_litiges }}</div><div class="stat-label">Litiges</div></div>
+    <div class="stat"><div class="stat-value">{{ ca_total|intcomma }}</div><div class="stat-label">FCFA de CA généré</div></div>
+    <div class="stat"><div class="stat-value">{{ panier_moyen|intcomma }}</div><div class="stat-label">FCFA panier moyen</div></div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Missions par catégorie</h3>
+    {% if categories %}
+        <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 0.6rem;">
+            {% for c in categories %}
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.2rem;">
+                        <span>{{ c.nom }}</span>
+                        <span>{{ c.nb_missions }}
+                            {% if c.nb_terminees %}<small class="card-meta">({{ c.nb_terminees }} clôturées)</small>{% endif %}
+                        </span>
+                    </div>
+                    <div style="height: 10px; background: var(--border); border-radius: 6px; overflow: hidden;">
+                        <div style="height: 100%; width: {% widthratio c.nb_missions max_missions 100 %}%; background: linear-gradient(90deg, var(--accent), var(--accent-hover, var(--accent)));"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="card-meta">Aucune mission pour le moment.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 class="card-title">🏆 Top prestataires</h3>
+    {% if top_prestataires %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 1px solid var(--border);">
+                        <th style="padding: 0.5rem;">Prestataire</th>
+                        <th style="padding: 0.5rem;">Missions</th>
+                        <th style="padding: 0.5rem;">Note moyenne</th>
+                        <th style="padding: 0.5rem;">CA (FCFA)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in top_prestataires %}
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 0.5rem;">{{ p.prestataire.username }}
+                                {% if p.prestataire.is_verified %}<span class="tag emerald">✓</span>{% endif %}
+                            </td>
+                            <td style="padding: 0.5rem;">{{ p.nb_missions }}</td>
+                            <td style="padding: 0.5rem;">{{ p.note_moyenne|default:'—' }} {% if p.note_moyenne %}/5{% endif %}</td>
+                            <td style="padding: 0.5rem;">{{ p.ca|intcomma }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="card-meta">Aucun prestataire n'a encore de mission clôturée.</p>
+    {% endif %}
+</div>
+{% endblock %}

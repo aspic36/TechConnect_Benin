@@ -44,11 +44,13 @@
                 <div class="sidebar-title">Back-office</div>
                 <a class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
                    href="{% url 'admin_panel:dashboard' %}">📊 Tableau de bord</a>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'statistiques' %}active{% endif %}"
+                   href="{% url 'admin_panel:statistiques' %}">📈 Statistiques</a>
                 <a class="sidebar-link {% if request.resolver_match.url_name in 'prestataires,verifier' %}active{% endif %}"
                    href="{% url 'admin_panel:prestataires' %}">👥 Prestataires</a>
                 <a class="sidebar-link {% if request.resolver_match.url_name in 'demandes,valider_demande,refuser_demande' %}active{% endif %}"
                    href="{% url 'admin_panel:demandes' %}">🗂 Demandes à modérer</a>
-                <a class="sidebar-link {% if request.resolver_match.url_name in 'litiges,clore_litige' %}active{% endif %}"
+                <a class="sidebar-link {% if request.resolver_match.url_name in 'litiges,mediation,resoudre_litige' %}active{% endif %}"
                    href="{% url 'admin_panel:litiges' %}">⚖️ Litiges</a>
                 <a class="sidebar-link {% if request.resolver_match.url_name in 'commissions,confirmer_commission' %}active{% endif %}"
                    href="{% url 'admin_panel:commissions' %}">💳 Commissions</a>

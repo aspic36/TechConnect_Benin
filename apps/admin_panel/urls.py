@@ -13,13 +13,15 @@ app_name = 'admin_panel'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('statistiques/', views.statistiques, name='statistiques'),
     path('prestataires/', views.liste_prestataires, name='prestataires'),
     path('prestataires/<int:pk>/verifier/', views.verifier_prestataire, name='verifier'),
     path('demandes/', views.liste_demandes, name='demandes'),
     path('demandes/<int:pk>/valider/', views.valider_demande, name='valider_demande'),
     path('demandes/<int:pk>/supprimer/', views.refuser_demande, name='refuser_demande'),
     path('litiges/', views.liste_litiges, name='litiges'),
-    path('litiges/<int:pk>/clore/', views.clore_litige, name='clore_litige'),
+    path('litiges/<int:pk>/mediation/', views.passer_mediation, name='mediation'),
+    path('litiges/<int:pk>/resoudre/', views.resoudre_litige, name='resoudre_litige'),
     path('commissions/', views.liste_commissions, name='commissions'),
     path('commissions/<int:pk>/confirmer/', views.confirmer_commission, name='confirmer_commission'),
     path('paiements/', views.liste_paiements, name='paiements'),

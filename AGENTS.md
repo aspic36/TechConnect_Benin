@@ -188,6 +188,13 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
     - CGU §4 réécrit (« Paiement de la commission » : retenue auto à la clôture, repli admin si reversement indisponible).
     - Suite portée à **125 tests OK** (9 tests de flux manuel/sanctions retirés).
 
+25. **Litiges — signalement, médiation et résolution (terminé)** :
+    - **Modèle `Litige`** (`apps/propositions`, migration `0005_litige`) : OneToOne sur `Mission`, signaleur (client ou prestataire), motif, **pièce jointe optionnelle** (`validators.py` : pdf/jpg/jpeg/png/gif/webp ≤ 5 Mo), statuts `ouvert` / `mediation` / `clos`, décision `en_faveur` (`client` / `prestataire` / partage), `decision`, dates.
+    - **Côté participants** : page `missions/<pk>/litige/` (`signaler_litige`) accessible aux 2 parties d'une mission `en_cours`/`terminee` (réfuse non-participants, mission clôturée, ou 2ᵉ litige) ; la mission bascule en `litige` ; l'autre partie + l'équipe sont notifiées.
+    - **Back-office** `litiges/` : dossier complet (motif, pièce jointe, statut), bouton **Médiation** (`passer_mediation` → statut `mediation` + les 2 parties invitées à échanger dans la messagerie), formulaire de **résolution** (`resoudre_litige` → mission + demande en `cloturee`, décision notifiée aux deux parties). Aucun reversement automatique : le fonds reste bloqué tant que l'équipe n'a pas tranché.
+    - **Statistiques avancées** (`admin_panel:statistiques`, app `django.contrib.humanize` activée) : revenus encaissés/en attente (commissions), volume d'activité (missions, CA total, panier moyen), **missions par catégorie** (barres CSS), **top 5 prestataires** (missions clôturées, note moyenne, CA). Lien sidebar + carte dashboard « FCFA encaissés ».
+    - `django.contrib.humanize` déclaré dans `INSTALLED_APPS`. Suite portée à **134 tests OK**.
+
 ## 🔲 RESTE À FAIRE (roadmap)
 
 **Logiciel (MVP)**
@@ -199,6 +206,8 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
 - [x] ~~Back-office : modération des demandes (validation `en_attente`), gestion des litiges~~
 - [x] ~~Paiements~~ (accord direct MVP : enregistrement d'un paiement par le client) — escrow / Mobile Money en Phase future
 - [x] ~~P4 : retrait du flux de commission manuel~~ (sanctions + règlement prestataire supprimés, back-office simplifié)
+- [x] ~~Litiges (`signaler_litige`, médiation, résolution back-office)~~
+- [x] ~~Statistiques avancées~~ (revenus, missions par catégorie, top prestataires)
 
 **Sécurité & production (Phases 5-6)**
 - [x] ~~Renforcement n°1 : anti brute-force connexion, validation uploads (avatar)~~
