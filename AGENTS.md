@@ -30,6 +30,7 @@ TechConnect_Benin/
 │   ├── messagerie/     # Message (fil par mission)
 │   └── admin_panel/    # Back-office (stats, vérification prestataires)
 ├── config/             # settings.py, urls.py, wsgi/asgi, init PyMySQL
+├── deploy/             # config Nginx (techconnect_nginx.conf) + setup_nginx.sh
 ├── docs/               # architecture.md, maquettes/
 ├── static/css/         # style.css (design system)
 ├── templates/          # base.html + templates par app
@@ -78,11 +79,26 @@ Django et ngrok tournent en **services systemd** (démarrage auto + `Restart`, m
 ```bash
 systemctl --user status techconnect-django techconnect-ngrok   # état
 systemctl --user restart techconnect-django techconnect-ngrok  # relancer
-journalctl --user -u techconnect-django -n 30 -f               # logs serveur
+journalctl --user -u techconnect-django -n 30 -f               # logs gunicorn
 journalctl --user -u techconnect-ngrok -n 30 -f                # logs tunnel
 ```
 
-URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel est lancé par `ngrok http 8000` en service, l'API locale de contrôle est sur `127.0.0.1:4040`). Hosts autorisés Django : `localhost,127.0.0.1,.ngrok-free.dev,.ngrok-free.app` (variables dans `.env`).
+URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` ([TLS épinglé IPv4 + IPv6 off] → réseaux sans IPv6). Hosts autorisés Django : `localhost,127.0.0.1,.ngrok-free.dev,.ngrok-free.app` (variables dans `.env`).
+
+## 🌐 Déploiement actuel (Nginx + gunicorn + ngrok)
+
+Chaîne de production simplifiée, **100 % gratuite** :
+
+```
+ngrok (HTTPS) → Nginx [:8083] → gunicorn [127.0.0.1:8000, 3 workers] → Django
+                     └── WhiteNoise sert /static/ + /media/ (en dev) — Nginx n'accède PAS à /home
+```
+
+- **gunicorn** remplace `runserver` : lancé par le service `techconnect-django` (`config.wsgi:application`, `--workers 3`).
+- **Nginx** : reverse proxy + `client_max_body_size 6M`, config `deploy/techconnect_nginx.conf`, **port 8083** (le 80 est occupé par le serveur `driveby`, le 8080 par un autre service local).
+- Install : `bash deploy/setup_nginx.sh` (sudo, une fois) → copie la config, désactive les sites Nginx `default`/`driveby`, démarre+reload.
+- Statiques via **WhiteNoise** (`whitenoise.middleware.WhiteNoiseMiddleware` + `STORAGES` manifest/compress) → `collectstatic` déjà fait (`staticfiles/`).
+- Reste pour la vraie prod : nom de domaine + Let's Encrypt (certbot) et déplacer l'app sur le serveur ; la même config Nginx sera réutilisée avec `listen 443 ssl`.
 
 ## 🧩 Règles métier
 
@@ -225,7 +241,7 @@ URL publique : `https://kam-nonsoluble-egoistically.ngrok-free.dev` (le tunnel e
 **Sécurité & production (Phases 5-6)**
 - [x] ~~Renforcement n°1 : anti brute-force connexion, validation uploads (avatar)~~
 - [x] ~~Sauvegardes régulières MySQL (cron 03h30, rotation 14 jours)~~
-- [ ] Déploiement Linux + Nginx + HTTPS
+- [x] ~~Déploiement Linux + Nginx + HTTPS~~ (Nginx actif sur :8083, HTTPS via ngrok — reste seulement domaine + Let's Encrypt pour l'exposition nominale)
 - [ ] Phase bêta fermée avec premiers utilisateurs au Bénin
 
 **Mobile (Phase 2)**

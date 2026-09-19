@@ -101,6 +101,9 @@ LOGIN_URL = 'accounts:connexion'
 # authentification, messages flash, protection clickjacking.
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise : sert les fichiers statiques via Gunicorn (aucun accès
+    # fichiers requis par Nginx / www-data) — compression + cache long.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -252,6 +255,16 @@ ABONNEMENT_DUREE_JOURS = 30
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Stockage des statiques : hachage du nom + compression gzip (WhiteNoise).
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 # ---------------------------------------------------------------------------
 # Fichiers médias (uploads utilisateurs : avatars, pièces jointes…)
