@@ -49,6 +49,7 @@ DB_NAME, DB_USER, DB_PASSWORD, DB_ROOT_PASSWORD, DB_HOST, DB_PORT
 DJANGO_SECRET_KEY, DJANGO_DEBUG, DJANGO_ALLOWED_HOSTS
 EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS, EMAIL_FROM
 ```
+⚠️ Emails **réels actifs** : SMTP Gmail (`sajusto060@gmail.com`, mot de passe d'application, port 587/TLS). Le backend passe en SMTP dès qu'`EMAIL_HOST` est rempli ; vide → console. Après toute modif de `.env`, redémarrer `systemctl --user restart techconnect-django` (l'auto-reload de runserver ne surveille pas `.env`).
 ⚠️ Jamais committer `.env`. Les mots de passe réels restent locaux.
 
 ## 🛠 Commandes essentielles
